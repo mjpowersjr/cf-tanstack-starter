@@ -1,0 +1,22 @@
+{
+  "name": "@repo/observability",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./middleware": "./src/middleware.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@repo/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.1",
+    "typescript": "5.9.3",
+    "@cloudflare/workers-types": "4.20260310.1",
+    "@tanstack/react-start": "1.166.6"
+  }
+}

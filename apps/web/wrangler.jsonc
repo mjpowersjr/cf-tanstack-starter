@@ -1,0 +1,52 @@
+{
+  "name": "cf-tanstack-starter",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+
+  // OpenTelemetry-compatible observability
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": {
+      "invocation_logs": true
+    }
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "cf-tanstack-starter-db",
+      "database_id": "LOCAL_D1_ID",
+      "migrations_dir": "../../packages/db/drizzle"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "cf-tanstack-starter-bucket"
+    }
+  ],
+
+  // Staging environment — deployed from `staging` branch
+  "env": {
+    "staging": {
+      "name": "cf-tanstack-starter-staging",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "cf-tanstack-starter-db-staging",
+          "database_id": "STAGING_D1_ID",
+          "migrations_dir": "../../packages/db/drizzle"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "BUCKET",
+          "bucket_name": "cf-tanstack-starter-bucket-staging"
+        }
+      ]
+    }
+  }
+}

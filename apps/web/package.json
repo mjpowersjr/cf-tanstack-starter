@@ -1,0 +1,42 @@
+{
+  "name": "@repo/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "1.2.4",
+    "@repo/db": "workspace:*",
+    "@repo/logger": "workspace:*",
+    "@repo/observability": "workspace:*",
+    "@tanstack/react-router": "1.166.6",
+    "@tanstack/react-start": "1.166.6",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "drizzle-orm": "npm:drizzle-orm@beta",
+    "lucide-react": "0.577.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tailwind-merge": "3.5.0",
+    "valibot": "^1.2.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "1.26.1",
+    "@cloudflare/workers-types": "4.20260310.1",
+    "@tailwindcss/vite": "4.2.1",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.1.4",
+    "tailwindcss": "4.2.1",
+    "typescript": "5.9.3",
+    "vite": "7.3.1",
+    "vite-tsconfig-paths": "6.1.1",
+    "vitest": "^3.2.1",
+    "wrangler": "4.71.0"
+  }
+}

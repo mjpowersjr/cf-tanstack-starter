@@ -1,0 +1,26 @@
+{
+  "name": "@repo/db",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "drizzle-kit push --config drizzle.config.ts",
+    "db:migrate:remote": "drizzle-kit push --config drizzle.config.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "drizzle-orm": "npm:drizzle-orm@beta",
+    "valibot": "^1.2.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "npm:drizzle-kit@beta",
+    "vitest": "^3.2.1",
+    "wrangler": "4.71.0",
+    "@cloudflare/workers-types": "4.20260310.1",
+    "typescript": "5.9.3"
+  }
+}

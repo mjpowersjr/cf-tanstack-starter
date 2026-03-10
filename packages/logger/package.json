@@ -1,0 +1,17 @@
+{
+  "name": "@repo/logger",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.1",
+    "typescript": "5.9.3",
+    "@cloudflare/workers-types": "4.20260310.1"
+  }
+}
