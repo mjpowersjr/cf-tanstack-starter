@@ -10,7 +10,19 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "check": "biome check --write .",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "db:generate": "pnpm --filter @repo/db db:generate",
+    "db:migrate:local": "pnpm --filter @repo/web db:migrate:local",
+    "db:migrate:remote": "pnpm --filter @repo/web db:migrate:remote",
+    "db:seed": "pnpm --filter @repo/db db:seed:generate && pnpm --filter @repo/web db:seed",
+    "db:studio": "pnpm --filter @repo/db db:studio",
+    "db:snapshot": "pnpm --filter @repo/web db:snapshot",
+    "deploy": "pnpm --filter @repo/web deploy",
+    "deploy:staging": "pnpm --filter @repo/web deploy:staging",
+    "preview": "pnpm --filter @repo/web preview",
+    "tail": "pnpm --filter @repo/web tail",
+    "cf:secret:list": "pnpm --filter @repo/web cf:secret:list",
+    "cf:secret:put": "pnpm --filter @repo/web cf:secret:put"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.6",

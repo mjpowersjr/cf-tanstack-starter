@@ -26,7 +26,28 @@
     "db:generate": {
       "cache": false
     },
-    "db:migrate": {
+    "db:migrate:local": {
+      "cache": false
+    },
+    "db:migrate:remote": {
+      "cache": false
+    },
+    "db:studio": {
+      "cache": false,
+      "persistent": true
+    },
+    "db:seed": {
+      "cache": false
+    },
+    "db:seed:generate": {
+      "cache": false
+    },
+    "deploy": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
+    "deploy:staging": {
+      "dependsOn": ["build"],
       "cache": false
     }
   }

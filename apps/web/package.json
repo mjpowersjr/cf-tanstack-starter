@@ -7,7 +7,17 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "db:seed": "wrangler d1 execute DB --local --file ../../packages/db/seed.sql",
+    "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "preview": "wrangler dev --remote",
+    "tail": "wrangler tail",
+    "db:snapshot": "wrangler d1 export DB --remote --output db-snapshot.sql && wrangler d1 execute DB --local --file db-snapshot.sql",
+    "cf:secret:list": "wrangler secret list",
+    "cf:secret:put": "wrangler secret put"
   },
   "dependencies": {
     "@radix-ui/react-slot": "1.2.4",

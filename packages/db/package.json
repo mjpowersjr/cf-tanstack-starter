@@ -8,9 +8,8 @@
   },
   "scripts": {
     "db:generate": "drizzle-kit generate",
-    "db:migrate:local": "drizzle-kit push --config drizzle.config.ts",
-    "db:migrate:remote": "drizzle-kit push --config drizzle.config.ts",
-    "db:seed": "tsx scripts/seed-local.ts && wrangler d1 execute DB --local --file seed.sql",
+    "db:studio": "drizzle-kit studio",
+    "db:seed:generate": "tsx scripts/seed-local.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
