@@ -1,9 +1,7 @@
-import {
-  Outlet,
-  createRootRoute,
-  HeadContent,
-  Scripts,
-} from "@tanstack/react-router";
+import { createRootRoute, HeadContent, Outlet, Scripts, useRouter } from "@tanstack/react-router";
+import { DefaultErrorComponent, NotFoundComponent } from "~/components/error-boundary";
+import { authClient } from "~/lib/auth";
+import { getSession } from "~/lib/get-session";
 import appCss from "~/styles/globals.css?url";
 
 export const Route = createRootRoute({
@@ -18,10 +16,24 @@ export const Route = createRootRoute({
       { rel: "icon", href: "/favicon.ico" },
     ],
   }),
+  beforeLoad: async () => {
+    const session = await getSession();
+    return { session };
+  },
   component: RootComponent,
+  errorComponent: DefaultErrorComponent,
+  notFoundComponent: NotFoundComponent,
 });
 
 function RootComponent() {
+  const { session } = Route.useRouteContext();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await authClient.signOut();
+    router.navigate({ to: "/" });
+  };
+
   return (
     <html lang="en">
       <head>
@@ -33,13 +45,38 @@ function RootComponent() {
             <a href="/" className="text-lg font-semibold">
               CF TanStack Starter
             </a>
-            <div className="flex gap-4">
+            <div className="flex items-center gap-4">
               <a href="/" className="hover:underline">
                 Home
               </a>
               <a href="/demo" className="hover:underline">
                 Demo
               </a>
+              {session ? (
+                <>
+                  {session.user.role === "admin" && (
+                    <a href="/admin" className="hover:underline">
+                      Admin
+                    </a>
+                  )}
+                  <span className="text-sm text-muted-foreground">
+                    {((session.user as Record<string, unknown>).username as string) ??
+                      session.user.name}
+                  </span>
+                  <button type="button" onClick={handleLogout} className="text-sm hover:underline">
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <a href="/login" className="hover:underline">
+                    Login
+                  </a>
+                  <a href="/register" className="hover:underline">
+                    Register
+                  </a>
+                </>
+              )}
             </div>
           </nav>
         </header>

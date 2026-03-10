@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { guestbookEntries, uploadedFiles } from "./schema";
 import { getTableName } from "drizzle-orm";
+import { describe, expect, it } from "vitest";
+import { guestbookEntries, uploadedFiles } from "./schema";
 
 describe("database schema", () => {
   it("defines guestbook_entries table", () => {

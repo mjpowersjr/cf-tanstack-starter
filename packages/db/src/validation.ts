@@ -16,10 +16,36 @@ export const AddEntrySchema = v.object({
 
 export type AddEntryInput = v.InferOutput<typeof AddEntrySchema>;
 
+/** Max file size: 5MB (base64 encodes ~33% larger, so limit base64 string accordingly) */
+const MAX_BASE64_LENGTH = Math.ceil((5 * 1024 * 1024 * 4) / 3);
+
+const ALLOWED_CONTENT_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/svg+xml",
+  "application/pdf",
+  "text/plain",
+  "text/csv",
+  "application/json",
+] as const;
+
 export const UploadFileSchema = v.object({
   filename: v.pipe(v.string(), v.minLength(1, "Filename is required"), v.maxLength(255)),
-  contentType: v.pipe(v.string(), v.minLength(1)),
-  base64: v.pipe(v.string(), v.minLength(1, "File content is required")),
+  contentType: v.pipe(
+    v.string(),
+    v.minLength(1),
+    v.check(
+      (val) => (ALLOWED_CONTENT_TYPES as readonly string[]).includes(val),
+      `Content type must be one of: ${ALLOWED_CONTENT_TYPES.join(", ")}`,
+    ),
+  ),
+  base64: v.pipe(
+    v.string(),
+    v.minLength(1, "File content is required"),
+    v.maxLength(MAX_BASE64_LENGTH, "File size must not exceed 5MB"),
+  ),
 });
 
 export type UploadFileInput = v.InferOutput<typeof UploadFileSchema>;

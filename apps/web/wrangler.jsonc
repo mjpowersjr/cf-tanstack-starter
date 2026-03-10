@@ -29,6 +29,11 @@
     }
   ],
 
+  "vars": {
+    "BETTER_AUTH_URL": "http://localhost:5173",
+    "SIGNUP_ENABLED": "true"
+  },
+
   // Staging environment — deployed from `staging` branch
   "env": {
     "staging": {
@@ -46,7 +51,11 @@
           "binding": "BUCKET",
           "bucket_name": "cf-tanstack-starter-bucket-staging"
         }
-      ]
+      ],
+      "vars": {
+        "BETTER_AUTH_URL": "https://cf-tanstack-starter-staging.workers.dev",
+        "SIGNUP_ENABLED": "true"
+      }
     }
   }
 }

@@ -7,7 +7,7 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".output/**"]
+      "outputs": [".output/**", "dist/**"]
     },
     "typecheck": {
       "dependsOn": ["^typecheck"]
@@ -19,6 +19,9 @@
     "test:watch": {
       "cache": false,
       "persistent": true
+    },
+    "lint": {
+      "cache": false
     },
     "db:generate": {
       "cache": false

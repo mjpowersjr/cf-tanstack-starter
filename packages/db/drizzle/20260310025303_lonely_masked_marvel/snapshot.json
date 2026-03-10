@@ -2,9 +2,7 @@
   "version": "7",
   "dialect": "sqlite",
   "id": "18f47d49-e86d-45dc-9334-9cce1d25f1db",
-  "prevIds": [
-    "00000000-0000-0000-0000-000000000000"
-  ],
+  "prevIds": ["00000000-0000-0000-0000-000000000000"],
   "ddl": [
     {
       "name": "guestbook_entries",
@@ -115,18 +113,14 @@
       "table": "uploaded_files"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "guestbook_entries_pk",
       "table": "guestbook_entries",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "uploaded_files_pk",
       "table": "uploaded_files",

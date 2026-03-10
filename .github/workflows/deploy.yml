@@ -74,6 +74,23 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Health Check
+        if: steps.deploy.outputs.deployment-url
+        run: |
+          URL="${{ steps.deploy.outputs.deployment-url }}"
+          echo "Checking health at $URL/api/health..."
+          for i in 1 2 3; do
+            STATUS=$(curl -sf "$URL/api/health" | jq -r '.status' 2>/dev/null || echo "fail")
+            if [ "$STATUS" = "ok" ]; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          echo "Health check failed after 3 attempts"
+          exit 1
+
   deploy-preview:
     name: Deploy Preview
     if: github.event_name == 'pull_request'

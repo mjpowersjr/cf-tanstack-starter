@@ -15,5 +15,7 @@
  * This package adds application-level tracing on top of that.
  */
 
-export { createTracer, type Tracer, type Span, type SpanOptions } from "./tracer";
+export { cacheMiddleware } from "./cache-middleware";
+export { errorMiddleware } from "./error-middleware";
 export { tracingMiddleware } from "./middleware";
+export { createTracer, type Span, type SpanOptions, type Tracer } from "./tracer";

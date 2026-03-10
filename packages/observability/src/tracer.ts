@@ -16,10 +16,7 @@ export interface Span {
 
 export interface Tracer {
   startSpan(name: string, options?: SpanOptions): Span;
-  startActiveSpan<T>(
-    name: string,
-    fn: (span: Span) => T | Promise<T>,
-  ): Promise<T>;
+  startActiveSpan<T>(name: string, fn: (span: Span) => T | Promise<T>): Promise<T>;
   startActiveSpan<T>(
     name: string,
     options: SpanOptions,
@@ -33,12 +30,7 @@ function generateId(bytes: number): string {
   return Array.from(arr, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function createSpan(
-  logger: Logger,
-  traceId: string,
-  name: string,
-  options?: SpanOptions,
-): Span {
+function createSpan(logger: Logger, traceId: string, name: string, options?: SpanOptions): Span {
   const spanId = generateId(8);
   const startTime = performance.now();
   const attributes: Record<string, string | number | boolean> = {

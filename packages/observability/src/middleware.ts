@@ -1,5 +1,5 @@
-import { createMiddleware } from "@tanstack/react-start";
 import { createLogger } from "@repo/logger";
+import { createMiddleware } from "@tanstack/react-start";
 
 const log = createLogger({ bindings: { component: "server-fn" } });
 
@@ -11,6 +11,7 @@ const log = createLogger({ bindings: { component: "server-fn" } });
  * - Execution duration
  * - Success/error status
  * - W3C-compatible trace context
+ * - Request ID (X-Request-Id) propagation
  *
  * Usage:
  * ```ts
@@ -19,31 +20,35 @@ const log = createLogger({ bindings: { component: "server-fn" } });
  *   .handler(async () => { ... })
  * ```
  */
-export const tracingMiddleware = createMiddleware().server(
-  async ({ next, context }) => {
-    const traceId = crypto.randomUUID();
-    const start = performance.now();
+export const tracingMiddleware = createMiddleware().server(async ({ next, context }) => {
+  const traceId = crypto.randomUUID();
+  const requestId = crypto.randomUUID();
+  const start = performance.now();
 
-    log.info("server_fn_start", { traceId });
+  log.info("server_fn_start", { traceId, requestId });
 
-    try {
-      const result = await next({ context: { ...context, traceId } });
+  try {
+    const ctx = (context ?? {}) as Record<string, unknown>;
+    const result = await next({
+      context: { ...ctx, traceId, requestId },
+    });
 
-      log.info("server_fn_end", {
-        traceId,
-        duration_ms: Math.round((performance.now() - start) * 100) / 100,
-        status: "ok",
-      });
+    log.info("server_fn_end", {
+      traceId,
+      requestId,
+      duration_ms: Math.round((performance.now() - start) * 100) / 100,
+      status: "ok",
+    });
 
-      return result;
-    } catch (error) {
-      log.error("server_fn_end", {
-        traceId,
-        duration_ms: Math.round((performance.now() - start) * 100) / 100,
-        status: "error",
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw error;
-    }
-  },
-);
+    return result;
+  } catch (error) {
+    log.error("server_fn_end", {
+      traceId,
+      requestId,
+      duration_ms: Math.round((performance.now() - start) * 100) / 100,
+      status: "error",
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
+});

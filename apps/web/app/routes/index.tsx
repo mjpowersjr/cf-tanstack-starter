@@ -35,12 +35,10 @@ function HomePage() {
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight">
-          CF TanStack Starter
-        </h1>
+        <h1 className="text-4xl font-bold tracking-tight">CF TanStack Starter</h1>
         <p className="text-lg text-muted-foreground">
-          A full-stack monorepo template for building on Cloudflare with
-          TanStack Start, Drizzle ORM, and shadcn/ui.
+          A full-stack monorepo template for building on Cloudflare with TanStack Start, Drizzle
+          ORM, and shadcn/ui.
         </p>
       </div>
 
@@ -51,9 +49,7 @@ function HomePage() {
             className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm"
           >
             <h3 className="font-semibold">{item.title}</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {item.description}
-            </p>
+            <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
           </div>
         ))}
       </div>

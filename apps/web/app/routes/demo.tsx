@@ -1,19 +1,13 @@
+import { AddEntrySchema, UploadFileSchema } from "@repo/db";
+import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { AddEntrySchema, UploadFileSchema } from "@repo/db";
-import { tracingMiddleware } from "@repo/observability/middleware";
-
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
-import { Textarea } from "~/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
+import { Separator } from "~/components/ui/separator";
 import {
   Table,
   TableBody,
@@ -22,20 +16,19 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { Badge } from "~/components/ui/badge";
-import { Separator } from "~/components/ui/separator";
+import { Textarea } from "~/components/ui/textarea";
 
 // --- Server Functions ---
 
 const getEntries = createServerFn({ method: "GET" })
   .middleware([tracingMiddleware])
   .handler(async () => {
-  const { env } = await import("cloudflare:workers");
-  const { createDb, guestbookEntries } = await import("@repo/db");
-  const { desc } = await import("drizzle-orm");
-  const db = createDb(env.DB);
-  return db.select().from(guestbookEntries).orderBy(desc(guestbookEntries.createdAt));
-});
+    const { env } = await import("cloudflare:workers");
+    const { createDb, guestbookEntries } = await import("@repo/db");
+    const { desc } = await import("drizzle-orm");
+    const db = createDb(env.DB);
+    return db.select().from(guestbookEntries).orderBy(desc(guestbookEntries.createdAt));
+  });
 
 const addEntry = createServerFn({ method: "POST" })
   .middleware([tracingMiddleware])
@@ -54,12 +47,12 @@ const addEntry = createServerFn({ method: "POST" })
 const getFiles = createServerFn({ method: "GET" })
   .middleware([tracingMiddleware])
   .handler(async () => {
-  const { env } = await import("cloudflare:workers");
-  const { createDb, uploadedFiles } = await import("@repo/db");
-  const { desc } = await import("drizzle-orm");
-  const db = createDb(env.DB);
-  return db.select().from(uploadedFiles).orderBy(desc(uploadedFiles.createdAt));
-});
+    const { env } = await import("cloudflare:workers");
+    const { createDb, uploadedFiles } = await import("@repo/db");
+    const { desc } = await import("drizzle-orm");
+    const db = createDb(env.DB);
+    return db.select().from(uploadedFiles).orderBy(desc(uploadedFiles.createdAt));
+  });
 
 const uploadFile = createServerFn({ method: "POST" })
   .middleware([tracingMiddleware])
@@ -169,22 +162,16 @@ function GuestbookSection({
         <Separator />
 
         {entries.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No entries yet. Be the first to sign!
-          </p>
+          <p className="text-sm text-muted-foreground">No entries yet. Be the first to sign!</p>
         ) : (
           <div className="space-y-3">
             {entries.map((entry) => (
               <div key={entry.id} className="rounded-md border p-3">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{entry.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {entry.createdAt}
-                  </span>
+                  <span className="text-xs text-muted-foreground">{entry.createdAt}</span>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {entry.message}
-                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{entry.message}</p>
               </div>
             ))}
           </div>
@@ -217,10 +204,7 @@ function FileUploadSection({
 
     const buffer = await file.arrayBuffer();
     const base64 = btoa(
-      new Uint8Array(buffer).reduce(
-        (data, byte) => data + String.fromCharCode(byte),
-        ""
-      )
+      new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ""),
     );
 
     await uploadFile({
@@ -247,9 +231,7 @@ function FileUploadSection({
         <CardTitle className="flex items-center gap-2">
           File Upload <Badge variant="secondary">R2</Badge>
         </CardTitle>
-        <CardDescription>
-          Upload files to Cloudflare R2 — metadata tracked in D1.
-        </CardDescription>
+        <CardDescription>Upload files to Cloudflare R2 — metadata tracked in D1.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
@@ -259,17 +241,13 @@ function FileUploadSection({
             disabled={uploading}
             className="cursor-pointer"
           />
-          {uploading && (
-            <p className="mt-2 text-sm text-muted-foreground">Uploading...</p>
-          )}
+          {uploading && <p className="mt-2 text-sm text-muted-foreground">Uploading...</p>}
         </div>
 
         <Separator />
 
         {files.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No files uploaded yet.
-          </p>
+          <p className="text-sm text-muted-foreground">No files uploaded yet.</p>
         ) : (
           <Table>
             <TableHeader>
@@ -282,15 +260,11 @@ function FileUploadSection({
             <TableBody>
               {files.map((file) => (
                 <TableRow key={file.id}>
-                  <TableCell className="font-medium">
-                    {file.filename}
-                  </TableCell>
+                  <TableCell className="font-medium">{file.filename}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{file.contentType}</Badge>
                   </TableCell>
-                  <TableCell className="text-right">
-                    {formatSize(file.size)}
-                  </TableCell>
+                  <TableCell className="text-right">{formatSize(file.size)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

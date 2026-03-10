@@ -4,7 +4,9 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./middleware": "./src/middleware.ts"
+    "./middleware": "./src/middleware.ts",
+    "./error-middleware": "./src/error-middleware.ts",
+    "./cache-middleware": "./src/cache-middleware.ts"
   },
   "scripts": {
     "test": "vitest run",

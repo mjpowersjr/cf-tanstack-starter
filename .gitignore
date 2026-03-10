@@ -8,3 +8,4 @@ dist
 .env.local
 .dev.vars
 routeTree.gen.ts
+seed.sql
