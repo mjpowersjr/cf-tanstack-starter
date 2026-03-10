@@ -5,12 +5,7 @@ import { admin, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { drizzle } from "drizzle-orm/d1";
 
-export function createAuth(env: {
-  DB: D1Database;
-  BETTER_AUTH_SECRET: string;
-  BETTER_AUTH_URL?: string;
-  SIGNUP_ENABLED?: string;
-}) {
+export function createAuth(env: Cloudflare.Env) {
   const db = drizzle(env.DB, { schema });
 
   return betterAuth({
@@ -35,7 +30,7 @@ export function createAuth(env: {
                 throw new Error("Signup is currently disabled");
               }
             }
-            return user;
+            return { data: user };
           },
           after: async (user) => {
             // First user becomes admin

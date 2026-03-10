@@ -54,7 +54,7 @@ function RootComponent() {
               </a>
               {session ? (
                 <>
-                  {session.user.role === "admin" && (
+                  {(session.user as Record<string, unknown>).role === "admin" && (
                     <a href="/admin" className="hover:underline">
                       Admin
                     </a>

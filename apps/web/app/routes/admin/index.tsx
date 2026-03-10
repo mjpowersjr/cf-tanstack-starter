@@ -27,7 +27,7 @@ export const Route = createFileRoute("/admin/")({
     if (!session) {
       throw redirect({ to: "/login" });
     }
-    if (session.user.role !== "admin") {
+    if ((session.user as Record<string, unknown>).role !== "admin") {
       throw redirect({ to: "/" });
     }
     return { session };
@@ -83,7 +83,7 @@ function UserList() {
           id: u.id,
           name: u.name,
           email: u.email,
-          username: (u as Record<string, unknown>).username as string | null,
+          username: (u as unknown as Record<string, unknown>).username as string | null,
           role: u.role as string | null,
           banned: u.banned as boolean | null,
           createdAt: new Date(u.createdAt).toLocaleDateString(),
