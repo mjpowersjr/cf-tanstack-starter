@@ -2,7 +2,7 @@
   "name": "cf-tanstack-starter",
   "compatibility_date": "2025-04-01",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
+  "main": "./app/server-entry.ts",
 
   // OpenTelemetry-compatible observability
   "observability": {
@@ -28,6 +28,10 @@
       "bucket_name": "cf-tanstack-starter-bucket"
     }
   ],
+
+  "triggers": {
+    "crons": ["0 * * * *", "*/15 * * * *"]
+  },
 
   "vars": {
     "BETTER_AUTH_URL": "http://localhost:5173",

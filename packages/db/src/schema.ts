@@ -80,3 +80,22 @@ export const uploadedFiles = sqliteTable("uploaded_files", {
   size: integer().notNull(),
   createdAt: text().notNull().default(sql`(current_timestamp)`),
 });
+
+// --- Background Jobs ---
+
+export const jobRuns = sqliteTable("job_runs", {
+  id: integer().primaryKey({ autoIncrement: true }),
+  jobName: text("job_name").notNull(),
+  triggerType: text("trigger_type").notNull(), // "cron" | "manual"
+  triggerCron: text("trigger_cron"),
+  triggeredBy: text("triggered_by"),
+  status: text().notNull(), // "running" | "success" | "error"
+  startedAt: text("started_at").notNull().default(sql`(current_timestamp)`),
+  completedAt: text("completed_at"),
+  durationMs: integer("duration_ms"),
+  result: text({ mode: "json" }),
+  metrics: text({ mode: "json" }),
+  error: text(),
+  errorStack: text("error_stack"),
+  logs: text({ mode: "json" }),
+});
