@@ -6,9 +6,9 @@ Track remaining gaps to address one at a time. Check off items as they're comple
 
 - [x] **Rate limiting** — Protect auth endpoints (login, signup) and API routes from brute-force/abuse. Use Cloudflare's `rate_limit` binding or in-memory sliding window.
 
-- [ ] **CSRF protection** — better-auth has built-in CSRF but verify it's active and covers all mutation endpoints. Add `SameSite=Strict` cookie attribute if not already set.
+- [x] **CSRF protection** — Verified: better-auth enables origin checking and fetch-metadata CSRF protection by default. Cookies are `HttpOnly`, `SameSite=Lax`, `Secure` in production. No code changes needed.
 
-- [ ] **`.dev.vars.example` + environment config docs** — No example env file exists. New contributors have to reverse-engineer required secrets from wrangler.jsonc and code. Create `.dev.vars.example` with placeholder values and comments.
+- [x] **`.dev.vars.example` + environment config docs** — No example env file exists. New contributors have to reverse-engineer required secrets from wrangler.jsonc and code. Create `.dev.vars.example` with placeholder values and comments.
 
 - [ ] **Database seeding script** — No way to populate local D1 with sample data for development. Add `pnpm db:seed` script that inserts test users, sample records, etc.
 

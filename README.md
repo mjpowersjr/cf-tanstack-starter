@@ -13,6 +13,9 @@ A production-ready monorepo template for full-stack apps on **Cloudflare Workers
 | **ORM** | [Drizzle ORM](https://orm.drizzle.team/) (type-safe SQL, zero overhead) |
 | **Validation** | [Valibot](https://valibot.dev/) (lightweight, tree-shakable, Standard Schema) |
 | **UI** | [shadcn/ui](https://ui.shadcn.com/) + [Tailwind CSS v4](https://tailwindcss.com/) |
+| **Auth** | [better-auth](https://www.better-auth.com/) (username/password, admin roles, CSRF) |
+| **Rate Limiting** | KV-backed per-IP rate limiter (auth + API endpoints) |
+| **Background Jobs** | Cron-scheduled + on-demand jobs via CF Workers `scheduled` events |
 | **Logging** | Pino-compatible structured logger (Workers-native) |
 | **Observability** | OpenTelemetry-compatible tracing via CF Workers Logs |
 | **Testing** | [Vitest](https://vitest.dev/) |
@@ -32,12 +35,27 @@ cf-tanstack-starter/
 │       │   ├── client.tsx        # Client entry (hydration)
 │       │   ├── router.tsx        # Router config
 │       │   ├── styles/globals.css
-│       │   ├── lib/utils.ts      # cn() helper
+│       │   ├── lib/
+│       │   │   ├── utils.ts          # cn() helper
+│       │   │   ├── auth.server.ts    # better-auth config
+│       │   │   ├── auth.client.ts    # Auth client hooks
+│       │   │   ├── get-session.ts    # Session server function
+│       │   │   ├── rate-limit.ts     # KV-backed rate limiter
+│       │   │   └── rate-limit-middleware.ts  # Server fn rate limit middleware
+│       │   ├── jobs/
+│       │   │   ├── types.ts          # Job interfaces
+│       │   │   ├── runner.ts         # Job execution engine
+│       │   │   ├── registry.ts       # Job registry
+│       │   │   └── definitions/      # Individual job definitions
 │       │   ├── components/ui/    # shadcn components
+│       │   ├── server-entry.ts   # Custom worker entry (fetch + scheduled)
 │       │   └── routes/
 │       │       ├── __root.tsx    # HTML shell + nav
 │       │       ├── index.tsx     # Landing page
-│       │       └── demo.tsx      # D1 guestbook + R2 file upload
+│       │       ├── login.tsx     # Login page
+│       │       ├── register.tsx  # Registration page
+│       │       ├── demo.tsx      # D1 guestbook + R2 file upload
+│       │       └── admin/        # Admin panel (jobs, user management)
 │       ├── tests/                # Vitest tests
 │       ├── vite.config.ts
 │       ├── vitest.config.ts
@@ -72,10 +90,15 @@ cf-tanstack-starter/
 # Install dependencies
 pnpm install
 
+# Set up environment variables
+cp apps/web/.dev.vars.example apps/web/.dev.vars
+# Edit .dev.vars — set BETTER_AUTH_SECRET to a random value:
+#   openssl rand -hex 32
+
 # Generate Drizzle migration SQL
 pnpm --filter @repo/db db:generate
 
-# Start dev server (local D1 + R2 emulation)
+# Start dev server (local D1 + R2 + KV emulation)
 pnpm dev
 ```
 
@@ -89,6 +112,8 @@ On first `pnpm dev`, Cloudflare's Vite plugin creates a local D1 database. You n
 # From the project root, apply SQL to local D1
 pnpm --filter @repo/db db:migrate:local
 ```
+
+The first user to register automatically becomes admin.
 
 ## Development
 
@@ -253,18 +278,35 @@ Create the resources:
 # Production
 wrangler d1 create cf-tanstack-starter-db
 wrangler r2 bucket create cf-tanstack-starter-bucket
+wrangler kv namespace create RATE_LIMIT
 
 # Staging
 wrangler d1 create cf-tanstack-starter-db-staging
 wrangler r2 bucket create cf-tanstack-starter-bucket-staging
+wrangler kv namespace create RATE_LIMIT --env staging
 ```
+
+Update `wrangler.jsonc` with the KV namespace IDs returned by the create commands.
 
 ### Environment Variables
 
-For local development, create `apps/web/.dev.vars`:
+For local development, copy the example file:
 
+```bash
+cp apps/web/.dev.vars.example apps/web/.dev.vars
 ```
-# Add any environment-specific variables here
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `BETTER_AUTH_SECRET` | Yes | Random secret for signing auth tokens (`openssl rand -hex 32`) |
+| `BETTER_AUTH_URL` | Yes | App base URL (`http://localhost:5173` for dev) |
+| `SIGNUP_ENABLED` | No | Set to `"false"` to disable public registration (default: `"true"`) |
+
+For production/staging, set secrets via Wrangler:
+
+```bash
+wrangler secret put BETTER_AUTH_SECRET
+wrangler secret put BETTER_AUTH_SECRET --env staging
 ```
 
 ## Testing

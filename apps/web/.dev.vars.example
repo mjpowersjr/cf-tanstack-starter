@@ -1,9 +1,15 @@
 # Cloudflare Workers environment variables
-# Copy this file to .dev.vars for local development
+# Copy this file to .dev.vars for local development:
+#   cp .dev.vars.example .dev.vars
 #
-# D1 and R2 bindings are configured in wrangler.jsonc and
+# D1, R2, and KV bindings are configured in wrangler.jsonc and
 # automatically available in local dev mode — no env vars needed.
-#
-# Auth (better-auth)
+
+# Auth (better-auth) — REQUIRED
+# Generate a random secret: openssl rand -hex 32
 BETTER_AUTH_SECRET=changeme-generate-a-random-secret
 BETTER_AUTH_URL=http://localhost:5173
+
+# Registration toggle — set to "false" to disable public signup
+# The first user to register always becomes admin regardless of this setting.
+SIGNUP_ENABLED=true
