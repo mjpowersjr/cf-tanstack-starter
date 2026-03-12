@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { getSession } from "~/lib/get-session";
+import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
 
 // --- Types ---
 
@@ -70,7 +71,10 @@ const getJobRuns = createServerFn({ method: "GET" })
   });
 
 const triggerJob = createServerFn({ method: "POST" })
-  .middleware([tracingMiddleware])
+  .middleware([
+    rateLimitMiddleware({ key: "trigger-job", limit: 10, windowSecs: 60 }),
+    tracingMiddleware,
+  ])
   .inputValidator(TriggerJobSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");

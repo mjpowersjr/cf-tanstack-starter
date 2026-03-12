@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { Textarea } from "~/components/ui/textarea";
+import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
 
 // --- Server Functions ---
 
@@ -31,7 +32,10 @@ const getEntries = createServerFn({ method: "GET" })
   });
 
 const addEntry = createServerFn({ method: "POST" })
-  .middleware([tracingMiddleware])
+  .middleware([
+    rateLimitMiddleware({ key: "add-entry", limit: 30, windowSecs: 60 }),
+    tracingMiddleware,
+  ])
   .inputValidator(AddEntrySchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
@@ -55,7 +59,10 @@ const getFiles = createServerFn({ method: "GET" })
   });
 
 const uploadFile = createServerFn({ method: "POST" })
-  .middleware([tracingMiddleware])
+  .middleware([
+    rateLimitMiddleware({ key: "upload-file", limit: 10, windowSecs: 60 }),
+    tracingMiddleware,
+  ])
   .inputValidator(UploadFileSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
