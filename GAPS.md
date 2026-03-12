@@ -10,7 +10,7 @@ Track remaining gaps to address one at a time. Check off items as they're comple
 
 - [x] **`.dev.vars.example` + environment config docs** — No example env file exists. New contributors have to reverse-engineer required secrets from wrangler.jsonc and code. Create `.dev.vars.example` with placeholder values and comments.
 
-- [ ] **Database seeding script** — No way to populate local D1 with sample data for development. Add `pnpm db:seed` script that inserts test users, sample records, etc.
+- [x] **Database seeding script** — No way to populate local D1 with sample data for development. Add `pnpm db:seed` script that inserts test users, sample records, etc.
 
 - [ ] **Error/loading states per-route** — Routes lack `errorComponent` and `pendingComponent`. Unhandled errors show a blank page or generic error. Add error boundaries and loading skeletons to key routes.
 

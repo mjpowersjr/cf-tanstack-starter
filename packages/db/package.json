@@ -18,11 +18,12 @@
     "valibot": "^1.2.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "4.20260310.1",
+    "better-auth": "^1.5.4",
     "drizzle-kit": "npm:drizzle-kit@beta",
     "tsx": "^4.21.0",
+    "typescript": "5.9.3",
     "vitest": "^3.2.1",
-    "wrangler": "4.71.0",
-    "@cloudflare/workers-types": "4.20260310.1",
-    "typescript": "5.9.3"
+    "wrangler": "4.71.0"
   }
 }

@@ -113,7 +113,13 @@ On first `pnpm dev`, Cloudflare's Vite plugin creates a local D1 database. You n
 pnpm --filter @repo/db db:migrate:local
 ```
 
-The first user to register automatically becomes admin.
+Optionally seed the database with sample data and test users:
+
+```bash
+pnpm db:seed    # Creates admin/password and user/password accounts + sample data
+```
+
+Otherwise, the first user to register automatically becomes admin.
 
 ## Development
 
