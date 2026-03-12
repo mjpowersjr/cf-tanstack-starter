@@ -12,7 +12,7 @@ Track remaining gaps to address one at a time. Check off items as they're comple
 
 - [x] **Database seeding script** — No way to populate local D1 with sample data for development. Add `pnpm db:seed` script that inserts test users, sample records, etc.
 
-- [ ] **Error/loading states per-route** — Routes lack `errorComponent` and `pendingComponent`. Unhandled errors show a blank page or generic error. Add error boundaries and loading skeletons to key routes.
+- [x] **Error/loading states per-route** — Routes lack `errorComponent` and `pendingComponent`. Unhandled errors show a blank page or generic error. Add error boundaries and loading skeletons to key routes.
 
 ## Medium Priority
 

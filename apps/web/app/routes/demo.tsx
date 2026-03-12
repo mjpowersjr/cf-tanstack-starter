@@ -3,6 +3,7 @@ import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { LoadingSkeleton } from "~/components/loading";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
@@ -93,6 +94,7 @@ export const Route = createFileRoute("/demo")({
     return { entries, files };
   },
   component: DemoPage,
+  pendingComponent: LoadingSkeleton,
 });
 
 function DemoPage() {

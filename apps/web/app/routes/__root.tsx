@@ -1,5 +1,6 @@
 import { createRootRoute, HeadContent, Outlet, Scripts, useRouter } from "@tanstack/react-router";
 import { DefaultErrorComponent, NotFoundComponent } from "~/components/error-boundary";
+import { LoadingSkeleton } from "~/components/loading";
 import { authClient } from "~/lib/auth";
 import { getSession } from "~/lib/get-session";
 import appCss from "~/styles/globals.css?url";
@@ -21,6 +22,7 @@ export const Route = createRootRoute({
     return { session };
   },
   component: RootComponent,
+  pendingComponent: LoadingSkeleton,
   errorComponent: DefaultErrorComponent,
   notFoundComponent: NotFoundComponent,
 });

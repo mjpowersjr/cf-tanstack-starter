@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { LoadingSkeleton } from "~/components/loading";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/admin/")({
   },
   loader: () => getSignupStatus(),
   component: AdminPage,
+  pendingComponent: LoadingSkeleton,
 });
 
 function AdminPage() {
