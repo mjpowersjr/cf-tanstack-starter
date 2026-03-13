@@ -3,7 +3,9 @@ import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import * as v from "valibot";
 import { LoadingSkeleton } from "~/components/loading";
+import { Pagination } from "~/components/pagination";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
@@ -59,16 +61,33 @@ const getRegisteredJobs = createServerFn({ method: "GET" })
     }));
   });
 
+const PAGE_SIZE = 20;
+
+const PaginationSchema = v.object({
+  page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
+});
+
 const getJobRuns = createServerFn({ method: "GET" })
   .middleware([tracingMiddleware])
-  .handler(async (): Promise<JobRun[]> => {
+  .inputValidator(PaginationSchema)
+  .handler(async ({ data }): Promise<{ runs: JobRun[]; total: number }> => {
     const { env } = await import("cloudflare:workers");
     const { createDb, jobRuns } = await import("@repo/db");
-    const { desc } = await import("drizzle-orm");
+    const { desc, sql } = await import("drizzle-orm");
     const db = createDb(env.DB);
-    return db.select().from(jobRuns).orderBy(desc(jobRuns.startedAt)).limit(50) as Promise<
-      JobRun[]
-    >;
+    const offset = ((data.page ?? 1) - 1) * PAGE_SIZE;
+
+    const [runs, countResult] = await Promise.all([
+      db
+        .select()
+        .from(jobRuns)
+        .orderBy(desc(jobRuns.startedAt))
+        .limit(PAGE_SIZE)
+        .offset(offset) as Promise<JobRun[]>,
+      db.select({ count: sql<number>`count(*)` }).from(jobRuns),
+    ]);
+
+    return { runs, total: countResult[0]?.count ?? 0 };
   });
 
 const triggerJob = createServerFn({ method: "POST" })
@@ -110,8 +129,11 @@ export const Route = createFileRoute("/admin/jobs")({
     return { session };
   },
   loader: async () => {
-    const [registeredJobs, recentRuns] = await Promise.all([getRegisteredJobs(), getJobRuns()]);
-    return { registeredJobs, recentRuns };
+    const [registeredJobs, runsData] = await Promise.all([
+      getRegisteredJobs(),
+      getJobRuns({ data: { page: 1 } }),
+    ]);
+    return { registeredJobs, runsData };
   },
   component: JobsPage,
   pendingComponent: LoadingSkeleton,
@@ -120,16 +142,24 @@ export const Route = createFileRoute("/admin/jobs")({
 // --- Components ---
 
 function JobsPage() {
-  const { registeredJobs, recentRuns: initialRuns } = Route.useLoaderData();
-  const [runs, setRuns] = useState(initialRuns);
+  const { registeredJobs, runsData: initialData } = Route.useLoaderData();
+  const [runs, setRuns] = useState(initialData.runs);
+  const [total, setTotal] = useState(initialData.total);
+  const [page, setPage] = useState(1);
   const [triggering, setTriggering] = useState<string | null>(null);
+
+  const fetchPage = async (p: number) => {
+    const data = await getJobRuns({ data: { page: p } });
+    setRuns(data.runs);
+    setTotal(data.total);
+    setPage(p);
+  };
 
   const handleTrigger = async (jobName: string) => {
     setTriggering(jobName);
     try {
       await triggerJob({ data: { jobName } });
-      const freshRuns = await getJobRuns();
-      setRuns(freshRuns);
+      await fetchPage(1);
     } catch (e) {
       console.error("Failed to trigger job:", e);
     } finally {
@@ -138,8 +168,7 @@ function JobsPage() {
   };
 
   const handleRefresh = async () => {
-    const freshRuns = await getJobRuns();
-    setRuns(freshRuns);
+    await fetchPage(page);
   };
 
   return (
@@ -183,7 +212,7 @@ function JobsPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Recent Runs</CardTitle>
-              <CardDescription>Last 50 job executions</CardDescription>
+              <CardDescription>{total} total job runs</CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={handleRefresh}>
               Refresh
@@ -194,23 +223,26 @@ function JobsPage() {
           {runs.length === 0 ? (
             <p className="py-4 text-center text-sm text-muted-foreground">No job runs yet.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Job</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Trigger</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Started</TableHead>
-                  <TableHead>Result</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {runs.map((run) => (
-                  <JobRunRow key={run.id} run={run} />
-                ))}
-              </TableBody>
-            </Table>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Job</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Trigger</TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead>Started</TableHead>
+                    <TableHead>Result</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {runs.map((run) => (
+                    <JobRunRow key={run.id} run={run} />
+                  ))}
+                </TableBody>
+              </Table>
+              <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={fetchPage} />
+            </>
           )}
         </CardContent>
       </Card>

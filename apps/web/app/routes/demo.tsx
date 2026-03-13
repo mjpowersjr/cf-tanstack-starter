@@ -3,7 +3,9 @@ import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import * as v from "valibot";
 import { LoadingSkeleton } from "~/components/loading";
+import { Pagination } from "~/components/pagination";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
@@ -22,14 +24,27 @@ import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
 
 // --- Server Functions ---
 
+const ENTRIES_PAGE_SIZE = 10;
+
 const getEntries = createServerFn({ method: "GET" })
   .middleware([tracingMiddleware])
-  .handler(async () => {
+  .inputValidator(v.object({ page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1) }))
+  .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
     const { createDb, guestbookEntries } = await import("@repo/db");
-    const { desc } = await import("drizzle-orm");
+    const { desc, sql } = await import("drizzle-orm");
     const db = createDb(env.DB);
-    return db.select().from(guestbookEntries).orderBy(desc(guestbookEntries.createdAt));
+    const offset = ((data.page ?? 1) - 1) * ENTRIES_PAGE_SIZE;
+    const [entries, countResult] = await Promise.all([
+      db
+        .select()
+        .from(guestbookEntries)
+        .orderBy(desc(guestbookEntries.createdAt))
+        .limit(ENTRIES_PAGE_SIZE)
+        .offset(offset),
+      db.select({ count: sql<number>`count(*)` }).from(guestbookEntries),
+    ]);
+    return { entries, total: countResult[0]?.count ?? 0 };
   });
 
 const addEntry = createServerFn({ method: "POST" })
@@ -118,15 +133,15 @@ const deleteFile = createServerFn({ method: "POST" })
 
 export const Route = createFileRoute("/demo")({
   loader: async () => {
-    const [entries, files] = await Promise.all([getEntries(), getFiles()]);
-    return { entries, files };
+    const [entriesData, files] = await Promise.all([getEntries({ data: { page: 1 } }), getFiles()]);
+    return { entriesData, files };
   },
   component: DemoPage,
   pendingComponent: LoadingSkeleton,
 });
 
 function DemoPage() {
-  const { entries, files } = Route.useLoaderData();
+  const { entriesData, files } = Route.useLoaderData();
 
   return (
     <div className="space-y-8">
@@ -138,7 +153,7 @@ function DemoPage() {
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        <GuestbookSection entries={entries} />
+        <GuestbookSection initialEntries={entriesData.entries} initialTotal={entriesData.total} />
         <FileUploadSection files={files} />
       </div>
     </div>
@@ -148,13 +163,25 @@ function DemoPage() {
 // --- Guestbook ---
 
 function GuestbookSection({
-  entries,
+  initialEntries,
+  initialTotal,
 }: {
-  entries: { id: number; name: string; message: string; createdAt: string }[];
+  initialEntries: { id: number; name: string; message: string; createdAt: string }[];
+  initialTotal: number;
 }) {
+  const [entries, setEntries] = useState(initialEntries);
+  const [total, setTotal] = useState(initialTotal);
+  const [page, setPage] = useState(1);
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const fetchPage = async (p: number) => {
+    const data = await getEntries({ data: { page: p } });
+    setEntries(data.entries);
+    setTotal(data.total);
+    setPage(p);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,7 +191,7 @@ function GuestbookSection({
     setName("");
     setMessage("");
     setSubmitting(false);
-    window.location.reload();
+    await fetchPage(1);
   };
 
   return (
@@ -211,6 +238,12 @@ function GuestbookSection({
                 <p className="mt-1 text-sm text-muted-foreground">{entry.message}</p>
               </div>
             ))}
+            <Pagination
+              page={page}
+              pageSize={ENTRIES_PAGE_SIZE}
+              total={total}
+              onPageChange={fetchPage}
+            />
           </div>
         )}
       </CardContent>
