@@ -1,4 +1,4 @@
-import { AddEntrySchema, UploadFileSchema } from "@repo/db";
+import { AddEntrySchema, FileIdSchema, UploadFileSchema } from "@repo/db";
 import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
@@ -82,6 +82,34 @@ const uploadFile = createServerFn({ method: "POST" })
       contentType: data.contentType,
       size: bytes.length,
     });
+
+    return { success: true };
+  });
+
+const deleteFile = createServerFn({ method: "POST" })
+  .middleware([
+    rateLimitMiddleware({ key: "delete-file", limit: 20, windowSecs: 60 }),
+    tracingMiddleware,
+  ])
+  .inputValidator(FileIdSchema)
+  .handler(async ({ data }) => {
+    const { env } = await import("cloudflare:workers");
+    const { createDb, uploadedFiles } = await import("@repo/db");
+    const { eq } = await import("drizzle-orm");
+    const db = createDb(env.DB);
+
+    const [file] = await db
+      .select()
+      .from(uploadedFiles)
+      .where(eq(uploadedFiles.id, data.id))
+      .limit(1);
+
+    if (!file) {
+      throw new Error("File not found");
+    }
+
+    await env.BUCKET.delete(file.r2Key);
+    await db.delete(uploadedFiles).where(eq(uploadedFiles.id, data.id));
 
     return { success: true };
   });
@@ -264,16 +292,29 @@ function FileUploadSection({
                 <TableHead>Filename</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead className="text-right">Size</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {files.map((file) => (
                 <TableRow key={file.id}>
-                  <TableCell className="font-medium">{file.filename}</TableCell>
+                  <TableCell className="font-medium">
+                    <a
+                      href={`/api/files/download/${file.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline"
+                    >
+                      {file.filename}
+                    </a>
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline">{file.contentType}</Badge>
                   </TableCell>
                   <TableCell className="text-right">{formatSize(file.size)}</TableCell>
+                  <TableCell className="text-right">
+                    <DeleteFileButton id={file.id} />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -281,5 +322,23 @@ function FileUploadSection({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function DeleteFileButton({ id }: { id: number }) {
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm("Delete this file?")) return;
+    setDeleting(true);
+    await deleteFile({ data: { id } });
+    setDeleting(false);
+    window.location.reload();
+  };
+
+  return (
+    <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
+      {deleting ? "..." : "Delete"}
+    </Button>
   );
 }

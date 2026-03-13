@@ -20,7 +20,7 @@ Track remaining gaps to address one at a time. Check off items as they're comple
 
 - [x] **Tests for jobs system and admin routes** — The new background jobs system has zero test coverage. Add unit tests for the runner, registry, and job definitions. Add integration tests for admin route server functions.
 
-- [ ] **R2 file upload download/deletion** — R2 bucket is bound but only used in health checks. Add a basic file management pattern: upload API route, download route with signed URLs, deletion, and a simple admin UI.
+- [x] **R2 file upload download/deletion** — R2 bucket is bound but only used in health checks. Add a basic file management pattern: upload API route, download route with signed URLs, deletion, and a simple admin UI.
 
 - [ ] **Pagination** — Job runs table and any future list views have no pagination. The jobs page hard-codes `LIMIT 50`. Add cursor-based or offset pagination with UI controls.
 

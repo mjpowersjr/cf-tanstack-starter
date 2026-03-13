@@ -50,6 +50,12 @@ export const UploadFileSchema = v.object({
 
 export type UploadFileInput = v.InferOutput<typeof UploadFileSchema>;
 
+export const FileIdSchema = v.object({
+  id: v.pipe(v.number(), v.integer(), v.minValue(1, "File ID is required")),
+});
+
+export type FileIdInput = v.InferOutput<typeof FileIdSchema>;
+
 export const TriggerJobSchema = v.object({
   jobName: v.pipe(v.string(), v.minLength(1, "Job name is required")),
 });
