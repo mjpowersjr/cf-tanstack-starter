@@ -18,7 +18,7 @@ Track remaining gaps to address one at a time. Check off items as they're comple
 
 - [ ] **Email/password reset flow** — better-auth supports it but no UI exists. Add forgot-password page, reset-password page, and email sending (via Cloudflare Email Workers or Resend).
 
-- [ ] **Tests for jobs system and admin routes** — The new background jobs system has zero test coverage. Add unit tests for the runner, registry, and job definitions. Add integration tests for admin route server functions.
+- [x] **Tests for jobs system and admin routes** — The new background jobs system has zero test coverage. Add unit tests for the runner, registry, and job definitions. Add integration tests for admin route server functions.
 
 - [ ] **R2 file upload download/deletion** — R2 bucket is bound but only used in health checks. Add a basic file management pattern: upload API route, download route with signed URLs, deletion, and a simple admin UI.
 
