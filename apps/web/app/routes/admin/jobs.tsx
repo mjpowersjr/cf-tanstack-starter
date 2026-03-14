@@ -3,6 +3,7 @@ import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { toast } from "sonner";
 import * as v from "valibot";
 import { LoadingSkeleton } from "~/components/loading";
 import { Pagination } from "~/components/pagination";
@@ -159,9 +160,10 @@ function JobsPage() {
     setTriggering(jobName);
     try {
       await triggerJob({ data: { jobName } });
+      toast.success(`Job "${jobName}" triggered`);
       await fetchPage(1);
-    } catch (e) {
-      console.error("Failed to trigger job:", e);
+    } catch {
+      toast.error(`Failed to trigger job "${jobName}"`);
     } finally {
       setTriggering(null);
     }

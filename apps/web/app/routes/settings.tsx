@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { LoadingSkeleton } from "~/components/loading";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -69,15 +70,26 @@ function SessionsCard({ currentSessionToken }: { currentSessionToken: string }) 
 
   const handleRevoke = async (token: string) => {
     setRevoking(token);
-    await authClient.revokeSession({ token });
-    await fetchSessions();
-    setRevoking(null);
+    try {
+      await authClient.revokeSession({ token });
+      toast.success("Session revoked");
+      await fetchSessions();
+    } catch {
+      toast.error("Failed to revoke session");
+    } finally {
+      setRevoking(null);
+    }
   };
 
   const handleRevokeOthers = async () => {
     if (!confirm("Revoke all other sessions? You will remain logged in.")) return;
-    await authClient.revokeSessions();
-    await fetchSessions();
+    try {
+      await authClient.revokeSessions();
+      toast.success("All other sessions revoked");
+      await fetchSessions();
+    } catch {
+      toast.error("Failed to revoke sessions");
+    }
   };
 
   if (!loaded) {

@@ -3,6 +3,7 @@ import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { toast } from "sonner";
 import * as v from "valibot";
 import { LoadingSkeleton } from "~/components/loading";
 import { Pagination } from "~/components/pagination";
@@ -154,7 +155,7 @@ function DemoPage() {
 
       <div className="grid gap-8 lg:grid-cols-2">
         <GuestbookSection initialEntries={entriesData.entries} initialTotal={entriesData.total} />
-        <FileUploadSection files={files} />
+        <FileUploadSection initialFiles={files} />
       </div>
     </div>
   );
@@ -187,11 +188,17 @@ function GuestbookSection({
     e.preventDefault();
     if (!name.trim() || !message.trim()) return;
     setSubmitting(true);
-    await addEntry({ data: { name: name.trim(), message: message.trim() } });
-    setName("");
-    setMessage("");
-    setSubmitting(false);
-    await fetchPage(1);
+    try {
+      await addEntry({ data: { name: name.trim(), message: message.trim() } });
+      setName("");
+      setMessage("");
+      toast.success("Entry added to guestbook");
+      await fetchPage(1);
+    } catch {
+      toast.error("Failed to add entry");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -254,9 +261,9 @@ function GuestbookSection({
 // --- File Upload ---
 
 function FileUploadSection({
-  files,
+  initialFiles,
 }: {
-  files: {
+  initialFiles: {
     id: number;
     filename: string;
     r2Key: string;
@@ -265,28 +272,41 @@ function FileUploadSection({
     createdAt: string;
   }[];
 }) {
+  const [files, setFiles] = useState(initialFiles);
   const [uploading, setUploading] = useState(false);
+
+  const refreshFiles = async () => {
+    const updated = await getFiles();
+    setFiles(updated);
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
 
-    const buffer = await file.arrayBuffer();
-    const base64 = btoa(
-      new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ""),
-    );
+    try {
+      const buffer = await file.arrayBuffer();
+      const base64 = btoa(
+        new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ""),
+      );
 
-    await uploadFile({
-      data: {
-        filename: file.name,
-        contentType: file.type || "application/octet-stream",
-        base64,
-      },
-    });
+      await uploadFile({
+        data: {
+          filename: file.name,
+          contentType: file.type || "application/octet-stream",
+          base64,
+        },
+      });
 
-    setUploading(false);
-    window.location.reload();
+      toast.success(`Uploaded ${file.name}`);
+      await refreshFiles();
+    } catch {
+      toast.error("Failed to upload file");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   };
 
   const formatSize = (bytes: number) => {
@@ -346,7 +366,7 @@ function FileUploadSection({
                   </TableCell>
                   <TableCell className="text-right">{formatSize(file.size)}</TableCell>
                   <TableCell className="text-right">
-                    <DeleteFileButton id={file.id} />
+                    <DeleteFileButton id={file.id} onDeleted={refreshFiles} />
                   </TableCell>
                 </TableRow>
               ))}
@@ -358,15 +378,21 @@ function FileUploadSection({
   );
 }
 
-function DeleteFileButton({ id }: { id: number }) {
+function DeleteFileButton({ id, onDeleted }: { id: number; onDeleted: () => void }) {
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
     if (!confirm("Delete this file?")) return;
     setDeleting(true);
-    await deleteFile({ data: { id } });
-    setDeleting(false);
-    window.location.reload();
+    try {
+      await deleteFile({ data: { id } });
+      toast.success("File deleted");
+      onDeleted();
+    } catch {
+      toast.error("Failed to delete file");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
