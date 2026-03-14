@@ -1,6 +1,6 @@
 import { TriggerJobSchema } from "@repo/db";
 import { tracingMiddleware } from "@repo/observability/middleware";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -127,16 +127,6 @@ export const Route = createFileRoute("/admin/jobs")({
       { property: "og:description", content: "View registered background jobs and run history." },
     ],
   }),
-  beforeLoad: async () => {
-    const session = await getSession();
-    if (!session) {
-      throw redirect({ to: "/login" });
-    }
-    if ((session.user as Record<string, unknown>).role !== "admin") {
-      throw redirect({ to: "/" });
-    }
-    return { session };
-  },
   loader: async () => {
     const [registeredJobs, runsData] = await Promise.all([
       getRegisteredJobs(),

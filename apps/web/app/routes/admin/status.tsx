@@ -1,5 +1,5 @@
 import { tracingMiddleware } from "@repo/observability/middleware";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -7,7 +7,6 @@ import { LoadingSkeleton } from "~/components/loading";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { getSession } from "~/lib/get-session";
 
 // --- Server Functions ---
 
@@ -101,12 +100,6 @@ export const Route = createFileRoute("/admin/status")({
       { property: "og:description", content: "System health and configuration overview." },
     ],
   }),
-  beforeLoad: async () => {
-    const session = await getSession();
-    if (!session) throw redirect({ to: "/login" });
-    if ((session.user as Record<string, unknown>).role !== "admin") throw redirect({ to: "/" });
-    return { session };
-  },
   loader: () => getSystemStatus(),
   component: StatusPage,
   pendingComponent: LoadingSkeleton,

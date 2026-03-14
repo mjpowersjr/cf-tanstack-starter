@@ -1,5 +1,5 @@
 import { tracingMiddleware } from "@repo/observability/middleware";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -18,7 +18,6 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { authClient } from "~/lib/auth";
-import { getSession } from "~/lib/get-session";
 
 const getSignupStatus = createServerFn({ method: "GET" })
   .middleware([tracingMiddleware])
@@ -73,16 +72,6 @@ export const Route = createFileRoute("/admin/")({
       { property: "og:description", content: "Admin dashboard for user management." },
     ],
   }),
-  beforeLoad: async () => {
-    const session = await getSession();
-    if (!session) {
-      throw redirect({ to: "/login" });
-    }
-    if ((session.user as Record<string, unknown>).role !== "admin") {
-      throw redirect({ to: "/" });
-    }
-    return { session };
-  },
   loader: () => getSignupStatus(),
   component: AdminPage,
   pendingComponent: LoadingSkeleton,

@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { LoadingSkeleton } from "~/components/loading";
@@ -15,7 +15,6 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { authClient } from "~/lib/auth";
-import { getSession } from "~/lib/get-session";
 
 // --- Route ---
 
@@ -28,12 +27,6 @@ export const Route = createFileRoute("/admin/sessions")({
       { property: "og:description", content: "Manage user sessions across the system." },
     ],
   }),
-  beforeLoad: async () => {
-    const session = await getSession();
-    if (!session) throw redirect({ to: "/login" });
-    if ((session.user as Record<string, unknown>).role !== "admin") throw redirect({ to: "/" });
-    return { session };
-  },
   component: SessionsPage,
   pendingComponent: LoadingSkeleton,
 });

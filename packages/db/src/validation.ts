@@ -61,3 +61,17 @@ export const TriggerJobSchema = v.object({
 });
 
 export type TriggerJobInput = v.InferOutput<typeof TriggerJobSchema>;
+
+export const EntryIdSchema = v.object({
+  id: v.pipe(v.number(), v.integer(), v.minValue(1, "Entry ID is required")),
+});
+
+export type EntryIdInput = v.InferOutput<typeof EntryIdSchema>;
+
+export const UpdateEntrySchema = v.object({
+  id: v.pipe(v.number(), v.integer(), v.minValue(1)),
+  name: v.pipe(v.string(), v.trim(), v.minLength(1, "Name is required"), v.maxLength(100)),
+  message: v.pipe(v.string(), v.trim(), v.minLength(1, "Message is required"), v.maxLength(2000)),
+});
+
+export type UpdateEntryInput = v.InferOutput<typeof UpdateEntrySchema>;

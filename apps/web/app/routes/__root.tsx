@@ -1,4 +1,11 @@
-import { createRootRoute, HeadContent, Outlet, Scripts, useRouter } from "@tanstack/react-router";
+import {
+  createRootRoute,
+  HeadContent,
+  Outlet,
+  Scripts,
+  useLocation,
+  useRouter,
+} from "@tanstack/react-router";
 import { Toaster } from "sonner";
 import { DefaultErrorComponent, NotFoundComponent } from "~/components/error-boundary";
 import { LoadingSkeleton } from "~/components/loading";
@@ -44,6 +51,8 @@ export const Route = createRootRoute({
 function RootComponent() {
   const { session } = Route.useRouteContext();
   const router = useRouter();
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith("/admin");
 
   const handleLogout = async () => {
     await authClient.signOut();
@@ -78,23 +87,9 @@ function RootComponent() {
               {session ? (
                 <>
                   {(session.user as Record<string, unknown>).role === "admin" && (
-                    <>
-                      <a href="/admin" className="hover:underline">
-                        Admin
-                      </a>
-                      <a href="/admin/jobs" className="hover:underline">
-                        Jobs
-                      </a>
-                      <a href="/admin/files" className="hover:underline">
-                        Files
-                      </a>
-                      <a href="/admin/sessions" className="hover:underline">
-                        Sessions
-                      </a>
-                      <a href="/admin/status" className="hover:underline">
-                        Status
-                      </a>
-                    </>
+                    <a href="/admin" className="hover:underline">
+                      Admin
+                    </a>
                   )}
                   <a href="/settings" className="hover:underline">
                     Settings
@@ -120,7 +115,7 @@ function RootComponent() {
             </div>
           </nav>
         </header>
-        <main className="container mx-auto px-4 py-8">
+        <main className={isAdmin ? "" : "container mx-auto px-4 py-8"}>
           <Outlet />
         </main>
         <Toaster richColors position="bottom-right" />

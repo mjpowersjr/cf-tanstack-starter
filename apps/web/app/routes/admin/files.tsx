@@ -1,6 +1,6 @@
 import { FileIdSchema } from "@repo/db";
 import { tracingMiddleware } from "@repo/observability/middleware";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -18,7 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { getSession } from "~/lib/get-session";
 import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
 
 // --- Server Functions ---
@@ -84,12 +83,6 @@ export const Route = createFileRoute("/admin/files")({
       { property: "og:description", content: "Manage uploaded files in R2 storage." },
     ],
   }),
-  beforeLoad: async () => {
-    const session = await getSession();
-    if (!session) throw redirect({ to: "/login" });
-    if ((session.user as Record<string, unknown>).role !== "admin") throw redirect({ to: "/" });
-    return { session };
-  },
   loader: () => getFilesAdmin({ data: { page: 1 } }),
   component: FilesPage,
   pendingComponent: LoadingSkeleton,
