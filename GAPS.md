@@ -34,6 +34,6 @@ Track remaining gaps to address one at a time. Check off items as they're comple
 
 - [x] **OpenGraph/SEO meta tags** — No `<meta>` tags for social sharing or SEO. Add `Meta` component usage in route heads for title, description, og:image.
 
-- [ ] **Drizzle migration format mismatch** — Drizzle generates migrations in subdirectories but `wrangler d1 migrations apply` expects flat `.sql` files. Add a script or document the workaround to bridge the two formats.
+- [x] **Drizzle migration format mismatch** — Resolved: wrangler now natively supports Drizzle's subdirectory migration format (`migrations_dir` in wrangler.jsonc points to `packages/db/drizzle`). No conversion script needed.
 
 - [ ] **KV/Durable Objects patterns** — wrangler.jsonc has no KV or DO bindings. Add example bindings and a simple usage pattern (e.g., KV for feature flags, DO for real-time counters) for teams that need them.
