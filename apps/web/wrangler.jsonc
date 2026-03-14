@@ -26,6 +26,10 @@
     {
       "binding": "RATE_LIMIT",
       "id": "RATE_LIMIT_KV_ID"
+    },
+    {
+      "binding": "FLAGS",
+      "id": "FLAGS_KV_ID"
     }
   ],
 
@@ -61,6 +65,10 @@
         {
           "binding": "RATE_LIMIT",
           "id": "RATE_LIMIT_KV_STAGING_ID"
+        },
+        {
+          "binding": "FLAGS",
+          "id": "FLAGS_KV_STAGING_ID"
         }
       ],
       "r2_buckets": [

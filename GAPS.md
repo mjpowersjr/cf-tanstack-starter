@@ -36,4 +36,4 @@ Track remaining gaps to address one at a time. Check off items as they're comple
 
 - [x] **Drizzle migration format mismatch** — Resolved: wrangler now natively supports Drizzle's subdirectory migration format (`migrations_dir` in wrangler.jsonc points to `packages/db/drizzle`). No conversion script needed.
 
-- [ ] **KV/Durable Objects patterns** — wrangler.jsonc has no KV or DO bindings. Add example bindings and a simple usage pattern (e.g., KV for feature flags, DO for real-time counters) for teams that need them.
+- [x] **KV/Durable Objects patterns** — Added KV-backed feature flags pattern with admin UI for managing flags. KV also used for rate limiting. DO deferred (adds significant complexity for a starter template).
