@@ -85,6 +85,15 @@ function RootComponent() {
                       <a href="/admin/jobs" className="hover:underline">
                         Jobs
                       </a>
+                      <a href="/admin/files" className="hover:underline">
+                        Files
+                      </a>
+                      <a href="/admin/sessions" className="hover:underline">
+                        Sessions
+                      </a>
+                      <a href="/admin/status" className="hover:underline">
+                        Status
+                      </a>
                     </>
                   )}
                   <a href="/settings" className="hover:underline">
