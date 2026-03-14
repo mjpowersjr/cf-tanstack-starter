@@ -165,7 +165,7 @@ function UserSessionLookup({ currentSessionToken }: { currentSessionToken: strin
         (u) =>
           u.name.toLowerCase().includes(search.toLowerCase()) ||
           u.email.toLowerCase().includes(search.toLowerCase()) ||
-          (u.username && u.username.toLowerCase().includes(search.toLowerCase())),
+          u.username?.toLowerCase().includes(search.toLowerCase()),
       )
     : users;
 
