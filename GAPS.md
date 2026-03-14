@@ -28,7 +28,7 @@ Track remaining gaps to address one at a time. Check off items as they're comple
 
 ## Low Priority
 
-- [ ] **Dark mode** — Tailwind and shadcn/ui support dark mode but no toggle exists. Add a theme provider and toggle component in the header.
+- [x] **Dark mode** — Tailwind and shadcn/ui support dark mode but no toggle exists. Add a theme provider and toggle component in the header.
 
 - [ ] **Toast/notification system** — No user feedback for async actions (job triggered, file uploaded, errors). Add a toast provider (sonner or react-hot-toast) and wire it into key actions.
 

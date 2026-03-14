@@ -1,6 +1,7 @@
 import { createRootRoute, HeadContent, Outlet, Scripts, useRouter } from "@tanstack/react-router";
 import { DefaultErrorComponent, NotFoundComponent } from "~/components/error-boundary";
 import { LoadingSkeleton } from "~/components/loading";
+import { ThemeToggle } from "~/components/theme-toggle";
 import { authClient } from "~/lib/auth";
 import { getSession } from "~/lib/get-session";
 import appCss from "~/styles/globals.css?url";
@@ -40,6 +41,12 @@ function RootComponent() {
     <html lang="en">
       <head>
         <HeadContent />
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: prevents theme flash before hydration
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("theme");if(t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme:dark)").matches))document.documentElement.classList.add("dark")}catch(e){}})()`,
+          }}
+        />
       </head>
       <body className="min-h-screen antialiased">
         <header className="border-b">
@@ -54,6 +61,7 @@ function RootComponent() {
               <a href="/demo" className="hover:underline">
                 Demo
               </a>
+              <ThemeToggle />
               {session ? (
                 <>
                   {(session.user as Record<string, unknown>).role === "admin" && (
