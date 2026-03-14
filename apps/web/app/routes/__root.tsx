@@ -66,6 +66,9 @@ function RootComponent() {
                       </a>
                     </>
                   )}
+                  <a href="/settings" className="hover:underline">
+                    Settings
+                  </a>
                   <span className="text-sm text-muted-foreground">
                     {((session.user as Record<string, unknown>).username as string) ??
                       session.user.name}

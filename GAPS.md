@@ -24,7 +24,7 @@ Track remaining gaps to address one at a time. Check off items as they're comple
 
 - [x] **Pagination** — Job runs table and any future list views have no pagination. The jobs page hard-codes `LIMIT 50`. Add cursor-based or offset pagination with UI controls.
 
-- [ ] **Session management UI** — Users can't view or revoke their active sessions. Add a settings/security page showing active sessions with "revoke" buttons.
+- [x] **Session management UI** — Users can't view or revoke their active sessions. Add a settings/security page showing active sessions with "revoke" buttons.
 
 ## Low Priority
 
