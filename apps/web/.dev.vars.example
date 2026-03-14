@@ -13,3 +13,9 @@ BETTER_AUTH_URL=http://localhost:5173
 # Registration toggle — set to "false" to disable public signup
 # The first user to register always becomes admin regardless of this setting.
 SIGNUP_ENABLED=true
+
+# Email (Resend) — OPTIONAL
+# Required for password reset emails. Without this, reset links are logged to console.
+# Sign up at https://resend.com and create an API key.
+# RESEND_API_KEY=re_xxxxxxxxxxxx
+# EMAIL_FROM=noreply@yourdomain.com

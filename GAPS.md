@@ -16,7 +16,7 @@ Track remaining gaps to address one at a time. Check off items as they're comple
 
 ## Medium Priority
 
-- [ ] **Email/password reset flow** — better-auth supports it but no UI exists. Add forgot-password page, reset-password page, and email sending (via Cloudflare Email Workers or Resend).
+- [x] **Email/password reset flow** — Added forgot-password and reset-password pages, pluggable email abstraction (Resend when API key set, console.log fallback for dev), wired into better-auth's sendResetPassword callback.
 
 - [x] **Tests for jobs system and admin routes** — The new background jobs system has zero test coverage. Add unit tests for the runner, registry, and job definitions. Add integration tests for admin route server functions.
 

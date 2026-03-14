@@ -85,12 +85,19 @@ function LoginPage() {
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? "Signing in..." : "Sign In"}
             </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <a href="/register" className="underline hover:text-foreground">
-                Register
-              </a>
-            </p>
+            <div className="space-y-2 text-center text-sm text-muted-foreground">
+              <p>
+                <a href="/forgot-password" className="underline hover:text-foreground">
+                  Forgot your password?
+                </a>
+              </p>
+              <p>
+                Don't have an account?{" "}
+                <a href="/register" className="underline hover:text-foreground">
+                  Register
+                </a>
+              </p>
+            </div>
           </form>
         </CardContent>
       </Card>
