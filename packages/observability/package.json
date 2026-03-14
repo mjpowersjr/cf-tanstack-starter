@@ -4,21 +4,20 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./middleware": "./src/middleware.ts",
-    "./error-middleware": "./src/error-middleware.ts",
-    "./cache-middleware": "./src/cache-middleware.ts"
+    "./middleware": "./src/middleware.ts"
   },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
     "@repo/logger": "workspace:*"
   },
   "devDependencies": {
-    "vitest": "^3.2.1",
-    "typescript": "5.9.3",
     "@cloudflare/workers-types": "4.20260310.1",
-    "@tanstack/react-start": "1.166.6"
+    "@tanstack/react-start": "1.166.6",
+    "typescript": "5.9.3",
+    "vitest": "^3.2.1"
   }
 }

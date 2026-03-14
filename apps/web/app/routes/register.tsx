@@ -1,3 +1,4 @@
+import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -6,10 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/com
 import { Input } from "~/components/ui/input";
 import { authClient } from "~/lib/auth";
 
-const isSignupEnabled = createServerFn({ method: "GET" }).handler(async () => {
-  const { env } = await import("cloudflare:workers");
-  return env.SIGNUP_ENABLED !== "false";
-});
+const isSignupEnabled = createServerFn({ method: "GET" })
+  .middleware([tracingMiddleware])
+  .handler(async () => {
+    const { env } = await import("cloudflare:workers");
+    return env.SIGNUP_ENABLED !== "false";
+  });
 
 export const Route = createFileRoute("/register")({
   head: () => ({

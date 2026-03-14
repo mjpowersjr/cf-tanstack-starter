@@ -20,10 +20,12 @@ import {
 import { authClient } from "~/lib/auth";
 import { getSession } from "~/lib/get-session";
 
-const getSignupStatus = createServerFn({ method: "GET" }).handler(async () => {
-  const { env } = await import("cloudflare:workers");
-  return env.SIGNUP_ENABLED !== "false";
-});
+const getSignupStatus = createServerFn({ method: "GET" })
+  .middleware([tracingMiddleware])
+  .handler(async () => {
+    const { env } = await import("cloudflare:workers");
+    return env.SIGNUP_ENABLED !== "false";
+  });
 
 const getFeatureFlags = createServerFn({ method: "GET" })
   .middleware([tracingMiddleware])

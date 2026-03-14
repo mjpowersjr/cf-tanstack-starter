@@ -4,7 +4,10 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "./app/server-entry.ts",
 
-  // OpenTelemetry-compatible observability
+  // Cloudflare Workers native observability
+  // Auto-instruments: fetch, D1, R2, KV, handler lifecycle
+  // Console output captured as OTel logs
+  // Configure OTLP export destinations in the CF dashboard
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,

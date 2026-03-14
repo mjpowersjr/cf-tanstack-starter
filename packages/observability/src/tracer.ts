@@ -1,115 +1,55 @@
-import { createLogger, type Logger } from "@repo/logger";
+import { type Span, SpanStatusCode, trace } from "@opentelemetry/api";
 
-export interface SpanOptions {
-  attributes?: Record<string, string | number | boolean>;
+const SERVICE_NAME = "cf-tanstack-starter";
+
+/**
+ * Get a tracer instance for creating custom spans.
+ *
+ * Returns a real OpenTelemetry tracer. By default this is a no-op
+ * (spans are created but not exported) until a TracerProvider is
+ * registered — either by Cloudflare's native custom span support
+ * (when it ships) or by wiring in @microlabs/otel-cf-workers.
+ *
+ * Usage:
+ *   import { getTracer } from "@repo/observability";
+ *   const tracer = getTracer();
+ *   await tracer.startActiveSpan("my-operation", async (span) => {
+ *     span.setAttribute("key", "value");
+ *     // ... do work ...
+ *   });
+ */
+export function getTracer(name: string = SERVICE_NAME) {
+  return trace.getTracer(name);
 }
 
-export interface Span {
-  traceId: string;
-  spanId: string;
-  name: string;
-  startTime: number;
-  setAttribute(key: string, value: string | number | boolean): void;
-  setStatus(status: "ok" | "error", message?: string): void;
-  end(): void;
-}
-
-export interface Tracer {
-  startSpan(name: string, options?: SpanOptions): Span;
-  startActiveSpan<T>(name: string, fn: (span: Span) => T | Promise<T>): Promise<T>;
-  startActiveSpan<T>(
-    name: string,
-    options: SpanOptions,
-    fn: (span: Span) => T | Promise<T>,
-  ): Promise<T>;
-}
-
-function generateId(bytes: number): string {
-  const arr = new Uint8Array(bytes);
-  crypto.getRandomValues(arr);
-  return Array.from(arr, (b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-function createSpan(logger: Logger, traceId: string, name: string, options?: SpanOptions): Span {
-  const spanId = generateId(8);
-  const startTime = performance.now();
-  const attributes: Record<string, string | number | boolean> = {
-    ...options?.attributes,
-  };
-  let status: "ok" | "error" | "unset" = "unset";
-  let statusMessage: string | undefined;
-
-  logger.debug("span_start", {
-    traceId,
-    spanId,
-    span: name,
-    timestamp: Date.now(),
-  });
-
-  return {
-    traceId,
-    spanId,
-    name,
-    startTime,
-
-    setAttribute(key, value) {
-      attributes[key] = value;
-    },
-
-    setStatus(s, message) {
-      status = s;
-      statusMessage = message;
-    },
-
-    end() {
-      const duration = performance.now() - startTime;
-      logger.info("span_end", {
-        traceId,
-        spanId,
-        span: name,
-        duration_ms: Math.round(duration * 100) / 100,
-        status,
-        ...(statusMessage ? { statusMessage } : {}),
-        ...attributes,
+/**
+ * Convenience wrapper for creating a span around an async operation.
+ *
+ * Usage:
+ *   import { withSpan } from "@repo/observability";
+ *   const result = await withSpan("processUpload", async (span) => {
+ *     span.setAttribute("file.size", bytes.length);
+ *     return doWork();
+ *   });
+ */
+export async function withSpan<T>(name: string, fn: (span: Span) => Promise<T>): Promise<T> {
+  const tracer = getTracer();
+  return tracer.startActiveSpan(name, async (span) => {
+    try {
+      const result = await fn(span);
+      span.setStatus({ code: SpanStatusCode.OK });
+      return result;
+    } catch (error) {
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
+        message: error instanceof Error ? error.message : String(error),
       });
-    },
-  };
-}
-
-export function createTracer(serviceName: string): Tracer {
-  const log = createLogger({
-    level: "debug",
-    bindings: { service: serviceName },
+      span.recordException(error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    } finally {
+      span.end();
+    }
   });
-
-  return {
-    startSpan(name: string, options?: SpanOptions): Span {
-      const traceId = generateId(16);
-      return createSpan(log, traceId, name, options);
-    },
-
-    async startActiveSpan<T>(
-      name: string,
-      optionsOrFn: SpanOptions | ((span: Span) => T | Promise<T>),
-      maybeFn?: (span: Span) => T | Promise<T>,
-    ): Promise<T> {
-      const fn = typeof optionsOrFn === "function" ? optionsOrFn : maybeFn!;
-      const options = typeof optionsOrFn === "function" ? undefined : optionsOrFn;
-      const traceId = generateId(16);
-      const span = createSpan(log, traceId, name, options);
-
-      try {
-        const result = await fn(span);
-        if (span.name) {
-          span.setStatus("ok");
-          span.end();
-        }
-        return result;
-      } catch (error) {
-        span.setStatus("error", String(error));
-        span.end();
-        throw error;
-      }
-    },
-  };
 }
+
+export { type Span, SpanStatusCode };
