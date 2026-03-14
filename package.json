@@ -37,6 +37,9 @@
       "sharp",
       "workerd",
       "@tailwindcss/oxide"
-    ]
+    ],
+    "overrides": {
+      "drizzle-orm": "npm:drizzle-orm@beta"
+    }
   }
 }
