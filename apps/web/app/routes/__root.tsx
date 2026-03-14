@@ -1,6 +1,7 @@
 import {
   createRootRoute,
   HeadContent,
+  Link,
   Outlet,
   Scripts,
   useLocation,
@@ -35,7 +36,7 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico" },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
     ],
   }),
   beforeLoad: async () => {
@@ -73,27 +74,27 @@ function RootComponent() {
       <body className="min-h-screen antialiased">
         <header className="border-b">
           <nav className="container mx-auto flex items-center justify-between px-4 py-3">
-            <a href="/" className="text-lg font-semibold">
+            <Link to="/" className="text-lg font-semibold">
               CF TanStack Starter
-            </a>
+            </Link>
             <div className="flex items-center gap-4">
-              <a href="/" className="hover:underline">
+              <Link to="/" className="hover:underline">
                 Home
-              </a>
-              <a href="/demo" className="hover:underline">
+              </Link>
+              <Link to="/demo" className="hover:underline">
                 Demo
-              </a>
+              </Link>
               <ThemeToggle />
               {session ? (
                 <>
                   {(session.user as Record<string, unknown>).role === "admin" && (
-                    <a href="/admin" className="hover:underline">
+                    <Link to="/admin" className="hover:underline">
                       Admin
-                    </a>
+                    </Link>
                   )}
-                  <a href="/settings" className="hover:underline">
+                  <Link to="/settings" className="hover:underline">
                     Settings
-                  </a>
+                  </Link>
                   <span className="text-sm text-muted-foreground">
                     {((session.user as Record<string, unknown>).username as string) ??
                       session.user.name}
@@ -104,12 +105,12 @@ function RootComponent() {
                 </>
               ) : (
                 <>
-                  <a href="/login" className="hover:underline">
+                  <Link to="/login" className="hover:underline">
                     Login
-                  </a>
-                  <a href="/register" className="hover:underline">
+                  </Link>
+                  <Link to="/register" className="hover:underline">
                     Register
-                  </a>
+                  </Link>
                 </>
               )}
             </div>

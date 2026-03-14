@@ -1,5 +1,5 @@
 import { tracingMiddleware } from "@repo/observability/middleware";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
@@ -48,9 +48,9 @@ function RegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <a href="/login" className="text-sm underline hover:text-foreground">
+            <Link to="/login" className="text-sm underline hover:text-foreground">
               Back to Login
-            </a>
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -156,9 +156,9 @@ function RegisterPage() {
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}
-              <a href="/login" className="underline hover:text-foreground">
+              <Link to="/login" className="underline hover:text-foreground">
                 Login
-              </a>
+              </Link>
             </p>
           </form>
         </CardContent>

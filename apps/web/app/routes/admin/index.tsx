@@ -17,17 +17,18 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import { adminMiddleware } from "~/lib/admin-middleware";
 import { authClient } from "~/lib/auth";
 
 const getSignupStatus = createServerFn({ method: "GET" })
-  .middleware([tracingMiddleware])
+  .middleware([adminMiddleware, tracingMiddleware])
   .handler(async () => {
     const { env } = await import("cloudflare:workers");
     return env.SIGNUP_ENABLED !== "false";
   });
 
 const getFeatureFlags = createServerFn({ method: "GET" })
-  .middleware([tracingMiddleware])
+  .middleware([adminMiddleware, tracingMiddleware])
   .handler(async () => {
     const { env } = await import("cloudflare:workers");
     const { listFlags } = await import("~/lib/feature-flags");
@@ -40,7 +41,7 @@ const FlagSchema = v.object({
 });
 
 const setFeatureFlag = createServerFn({ method: "POST" })
-  .middleware([tracingMiddleware])
+  .middleware([adminMiddleware, tracingMiddleware])
   .inputValidator(FlagSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
@@ -54,7 +55,7 @@ const DeleteFlagSchema = v.object({
 });
 
 const deleteFeatureFlag = createServerFn({ method: "POST" })
-  .middleware([tracingMiddleware])
+  .middleware([adminMiddleware, tracingMiddleware])
   .inputValidator(DeleteFlagSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");

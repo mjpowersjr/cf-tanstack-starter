@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
@@ -87,15 +87,15 @@ function LoginPage() {
             </Button>
             <div className="space-y-2 text-center text-sm text-muted-foreground">
               <p>
-                <a href="/forgot-password" className="underline hover:text-foreground">
+                <Link to="/forgot-password" className="underline hover:text-foreground">
                   Forgot your password?
-                </a>
+                </Link>
               </p>
               <p>
                 Don't have an account?{" "}
-                <a href="/register" className="underline hover:text-foreground">
+                <Link to="/register" className="underline hover:text-foreground">
                   Register
-                </a>
+                </Link>
               </p>
             </div>
           </form>

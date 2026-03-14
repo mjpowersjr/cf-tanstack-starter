@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
@@ -40,9 +40,9 @@ function ResetPasswordPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <a href="/forgot-password" className="text-sm underline hover:text-foreground">
+            <Link to="/forgot-password" className="text-sm underline hover:text-foreground">
               Request new reset link
-            </a>
+            </Link>
           </CardContent>
         </Card>
       </div>

@@ -18,6 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import { adminMiddleware } from "~/lib/admin-middleware";
+import { formatSize } from "~/lib/format";
 import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
 
 // --- Server Functions ---
@@ -25,7 +27,7 @@ import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
 const PAGE_SIZE = 20;
 
 const getFilesAdmin = createServerFn({ method: "GET" })
-  .middleware([tracingMiddleware])
+  .middleware([adminMiddleware, tracingMiddleware])
   .inputValidator(v.object({ page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1) }))
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
@@ -49,6 +51,7 @@ const getFilesAdmin = createServerFn({ method: "GET" })
 
 const deleteFileAdmin = createServerFn({ method: "POST" })
   .middleware([
+    adminMiddleware,
     rateLimitMiddleware({ key: "admin-delete-file", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
@@ -112,12 +115,6 @@ function FilesPage() {
     } catch {
       toast.error("Failed to delete file");
     }
-  };
-
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (

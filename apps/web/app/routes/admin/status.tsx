@@ -7,11 +7,12 @@ import { LoadingSkeleton } from "~/components/loading";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { adminMiddleware } from "~/lib/admin-middleware";
 
 // --- Server Functions ---
 
 const getSystemStatus = createServerFn({ method: "GET" })
-  .middleware([tracingMiddleware])
+  .middleware([adminMiddleware, tracingMiddleware])
   .handler(async () => {
     const { env } = await import("cloudflare:workers");
     const { createDb, uploadedFiles } = await import("@repo/db");

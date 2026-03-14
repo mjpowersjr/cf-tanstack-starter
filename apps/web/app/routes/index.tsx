@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -71,12 +71,12 @@ function HomePage() {
       </div>
 
       <div className="flex gap-4">
-        <a
-          href="/demo"
+        <Link
+          to="/demo"
           className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
         >
           Try the Demo
-        </a>
+        </Link>
       </div>
     </div>
   );

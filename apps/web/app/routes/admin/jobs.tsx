@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { getSession } from "~/lib/get-session";
+import { adminMiddleware } from "~/lib/admin-middleware";
 import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
 
 // --- Types ---
@@ -52,7 +52,7 @@ interface RegisteredJob {
 // --- Server Functions ---
 
 const getRegisteredJobs = createServerFn({ method: "GET" })
-  .middleware([tracingMiddleware])
+  .middleware([adminMiddleware, tracingMiddleware])
   .handler(async (): Promise<RegisteredJob[]> => {
     const { jobs } = await import("~/jobs/registry");
     return Object.values(jobs).map((j) => ({
@@ -69,7 +69,7 @@ const PaginationSchema = v.object({
 });
 
 const getJobRuns = createServerFn({ method: "GET" })
-  .middleware([tracingMiddleware])
+  .middleware([adminMiddleware, tracingMiddleware])
   .inputValidator(PaginationSchema)
   .handler(async ({ data }): Promise<{ runs: JobRun[]; total: number }> => {
     const { env } = await import("cloudflare:workers");
@@ -93,15 +93,15 @@ const getJobRuns = createServerFn({ method: "GET" })
 
 const triggerJob = createServerFn({ method: "POST" })
   .middleware([
+    adminMiddleware,
     rateLimitMiddleware({ key: "trigger-job", limit: 10, windowSecs: 60 }),
     tracingMiddleware,
   ])
   .inputValidator(TriggerJobSchema)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { env } = await import("cloudflare:workers");
     const { jobs } = await import("~/jobs/registry");
     const { executeJob } = await import("~/jobs/runner");
-    const session = await getSession();
 
     const job = jobs[data.jobName];
     if (!job) {
@@ -110,7 +110,7 @@ const triggerJob = createServerFn({ method: "POST" })
 
     await executeJob(job, env, {
       triggerType: "manual",
-      triggeredBy: session?.user?.id,
+      triggeredBy: context.session.user.id,
     });
 
     return { success: true };

@@ -1,4 +1,4 @@
-import { useLocation } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import {
   Activity,
   Briefcase,
@@ -12,9 +12,13 @@ import { ScrollArea } from "~/components/ui/scroll-area";
 const navGroups = [
   {
     label: "Overview",
+    items: [{ label: "Dashboard", href: "/admin", icon: LayoutDashboard }],
+  },
+  {
+    label: "Content",
     items: [
-      { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
       { label: "Guestbook", href: "/admin/guestbook", icon: MessageSquare },
+      { label: "Files", href: "/admin/files", icon: FileText },
     ],
   },
   {
@@ -25,7 +29,6 @@ const navGroups = [
     label: "System",
     items: [
       { label: "Jobs", href: "/admin/jobs", icon: Briefcase },
-      { label: "Files", href: "/admin/files", icon: FileText },
       { label: "Status", href: "/admin/status", icon: Activity },
     ],
   },
@@ -53,9 +56,9 @@ export function AdminSidebar() {
                   const Icon = item.icon;
                   const active = isActive(item.href);
                   return (
-                    <a
+                    <Link
                       key={item.href}
-                      href={item.href}
+                      to={item.href}
                       className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
                         active
                           ? "bg-accent font-medium text-accent-foreground"
@@ -64,7 +67,7 @@ export function AdminSidebar() {
                     >
                       <Icon className="h-4 w-4" />
                       {item.label}
-                    </a>
+                    </Link>
                   );
                 })}
               </div>
@@ -96,9 +99,9 @@ export function AdminMobileSidebar() {
               const Icon = item.icon;
               const active = isActive(item.href);
               return (
-                <a
+                <Link
                   key={item.href}
-                  href={item.href}
+                  to={item.href}
                   className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
                     active
                       ? "bg-accent font-medium text-accent-foreground"
@@ -107,7 +110,7 @@ export function AdminMobileSidebar() {
                 >
                   <Icon className="h-4 w-4" />
                   {item.label}
-                </a>
+                </Link>
               );
             })}
           </div>

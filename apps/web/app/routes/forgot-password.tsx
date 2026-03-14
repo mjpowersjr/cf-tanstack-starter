@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
@@ -55,9 +55,9 @@ function ForgotPasswordPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <a href="/login" className="text-sm underline hover:text-foreground">
+            <Link to="/login" className="text-sm underline hover:text-foreground">
               Back to Login
-            </a>
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -99,9 +99,9 @@ function ForgotPasswordPage() {
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Remember your password?{" "}
-              <a href="/login" className="underline hover:text-foreground">
+              <Link to="/login" className="underline hover:text-foreground">
                 Login
-              </a>
+              </Link>
             </p>
           </form>
         </CardContent>

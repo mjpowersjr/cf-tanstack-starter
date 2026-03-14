@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import { adminMiddleware } from "~/lib/admin-middleware";
 import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
 
 // --- Server Functions ---
@@ -40,7 +41,7 @@ const PaginationSchema = v.object({
 });
 
 const getEntries = createServerFn({ method: "GET" })
-  .middleware([tracingMiddleware])
+  .middleware([adminMiddleware, tracingMiddleware])
   .inputValidator(PaginationSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
@@ -66,6 +67,7 @@ const getEntries = createServerFn({ method: "GET" })
 
 const createEntry = createServerFn({ method: "POST" })
   .middleware([
+    adminMiddleware,
     rateLimitMiddleware({ key: "admin-create-entry", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
@@ -80,6 +82,7 @@ const createEntry = createServerFn({ method: "POST" })
 
 const updateEntry = createServerFn({ method: "POST" })
   .middleware([
+    adminMiddleware,
     rateLimitMiddleware({ key: "admin-update-entry", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
@@ -98,6 +101,7 @@ const updateEntry = createServerFn({ method: "POST" })
 
 const deleteEntry = createServerFn({ method: "POST" })
   .middleware([
+    adminMiddleware,
     rateLimitMiddleware({ key: "admin-delete-entry", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
