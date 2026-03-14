@@ -119,6 +119,14 @@ const triggerJob = createServerFn({ method: "POST" })
 // --- Route ---
 
 export const Route = createFileRoute("/admin/jobs")({
+  head: () => ({
+    meta: [
+      { title: "Jobs | CF TanStack Starter" },
+      { name: "description", content: "View registered background jobs and run history." },
+      { property: "og:title", content: "Jobs | CF TanStack Starter" },
+      { property: "og:description", content: "View registered background jobs and run history." },
+    ],
+  }),
   beforeLoad: async () => {
     const session = await getSession();
     if (!session) {

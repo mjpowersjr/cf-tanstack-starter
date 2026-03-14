@@ -32,7 +32,7 @@ Track remaining gaps to address one at a time. Check off items as they're comple
 
 - [x] **Toast/notification system** — No user feedback for async actions (job triggered, file uploaded, errors). Add a toast provider (sonner or react-hot-toast) and wire it into key actions.
 
-- [ ] **OpenGraph/SEO meta tags** — No `<meta>` tags for social sharing or SEO. Add `Meta` component usage in route heads for title, description, og:image.
+- [x] **OpenGraph/SEO meta tags** — No `<meta>` tags for social sharing or SEO. Add `Meta` component usage in route heads for title, description, og:image.
 
 - [ ] **Drizzle migration format mismatch** — Drizzle generates migrations in subdirectories but `wrangler d1 migrations apply` expects flat `.sql` files. Add a script or document the workaround to bridge the two formats.
 

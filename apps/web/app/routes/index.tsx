@@ -1,6 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Home | CF TanStack Starter" },
+      {
+        name: "description",
+        content:
+          "Full-stack monorepo template built on Cloudflare Workers, TanStack Start, Drizzle ORM, and shadcn/ui.",
+      },
+      { property: "og:title", content: "CF TanStack Starter" },
+      {
+        property: "og:description",
+        content:
+          "Full-stack monorepo template built on Cloudflare Workers, TanStack Start, Drizzle ORM, and shadcn/ui.",
+      },
+    ],
+  }),
   component: HomePage,
 });
 

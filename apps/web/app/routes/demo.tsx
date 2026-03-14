@@ -133,6 +133,20 @@ const deleteFile = createServerFn({ method: "POST" })
 // --- Route ---
 
 export const Route = createFileRoute("/demo")({
+  head: () => ({
+    meta: [
+      { title: "Demo | CF TanStack Starter" },
+      {
+        name: "description",
+        content: "Try out D1 (SQLite) and R2 (object storage) powered by Cloudflare Workers.",
+      },
+      { property: "og:title", content: "Demo | CF TanStack Starter" },
+      {
+        property: "og:description",
+        content: "Try out D1 (SQLite) and R2 (object storage) powered by Cloudflare Workers.",
+      },
+    ],
+  }),
   loader: async () => {
     const [entriesData, files] = await Promise.all([getEntries({ data: { page: 1 } }), getFiles()]);
     return { entriesData, files };

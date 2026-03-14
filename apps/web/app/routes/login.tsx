@@ -6,6 +6,14 @@ import { Input } from "~/components/ui/input";
 import { authClient } from "~/lib/auth";
 
 export const Route = createFileRoute("/login")({
+  head: () => ({
+    meta: [
+      { title: "Login | CF TanStack Starter" },
+      { name: "description", content: "Sign in to your account." },
+      { property: "og:title", content: "Login | CF TanStack Starter" },
+      { property: "og:description", content: "Sign in to your account." },
+    ],
+  }),
   component: LoginPage,
 });
 

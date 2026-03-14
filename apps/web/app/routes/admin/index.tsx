@@ -23,6 +23,14 @@ const getSignupStatus = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export const Route = createFileRoute("/admin/")({
+  head: () => ({
+    meta: [
+      { title: "Admin | CF TanStack Starter" },
+      { name: "description", content: "Admin dashboard for user management." },
+      { property: "og:title", content: "Admin | CF TanStack Starter" },
+      { property: "og:description", content: "Admin dashboard for user management." },
+    ],
+  }),
   beforeLoad: async () => {
     const session = await getSession();
     if (!session) {

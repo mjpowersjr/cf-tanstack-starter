@@ -17,6 +17,14 @@ import { authClient } from "~/lib/auth";
 import { getSession } from "~/lib/get-session";
 
 export const Route = createFileRoute("/settings")({
+  head: () => ({
+    meta: [
+      { title: "Settings | CF TanStack Starter" },
+      { name: "description", content: "Manage your account and active sessions." },
+      { property: "og:title", content: "Settings | CF TanStack Starter" },
+      { property: "og:description", content: "Manage your account and active sessions." },
+    ],
+  }),
   beforeLoad: async () => {
     const session = await getSession();
     if (!session) {

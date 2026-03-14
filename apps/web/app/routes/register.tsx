@@ -12,6 +12,14 @@ const isSignupEnabled = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export const Route = createFileRoute("/register")({
+  head: () => ({
+    meta: [
+      { title: "Register | CF TanStack Starter" },
+      { name: "description", content: "Create a new account." },
+      { property: "og:title", content: "Register | CF TanStack Starter" },
+      { property: "og:description", content: "Create a new account." },
+    ],
+  }),
   loader: () => isSignupEnabled(),
   component: RegisterPage,
 });

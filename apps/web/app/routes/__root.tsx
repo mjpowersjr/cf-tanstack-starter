@@ -1,4 +1,5 @@
 import { createRootRoute, HeadContent, Outlet, Scripts, useRouter } from "@tanstack/react-router";
+import { Toaster } from "sonner";
 import { DefaultErrorComponent, NotFoundComponent } from "~/components/error-boundary";
 import { LoadingSkeleton } from "~/components/loading";
 import { ThemeToggle } from "~/components/theme-toggle";
@@ -12,6 +13,18 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "CF TanStack Starter" },
+      {
+        name: "description",
+        content:
+          "A full-stack monorepo template for building on Cloudflare with TanStack Start, Drizzle ORM, and shadcn/ui.",
+      },
+      { property: "og:title", content: "CF TanStack Starter" },
+      {
+        property: "og:description",
+        content:
+          "A full-stack monorepo template for building on Cloudflare with TanStack Start, Drizzle ORM, and shadcn/ui.",
+      },
+      { property: "og:type", content: "website" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -101,6 +114,7 @@ function RootComponent() {
         <main className="container mx-auto px-4 py-8">
           <Outlet />
         </main>
+        <Toaster richColors position="bottom-right" />
         <Scripts />
       </body>
     </html>
