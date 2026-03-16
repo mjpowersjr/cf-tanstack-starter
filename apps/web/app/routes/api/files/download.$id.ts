@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-// File downloads are intentionally public — no auth required.
-// This is a demo template; restrict access in production if needed.
+// @public — file downloads are intentionally open for the demo template
 export const Route = createFileRoute("/api/files/download/$id")({
   server: {
     handlers: {

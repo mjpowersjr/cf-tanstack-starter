@@ -1,7 +1,5 @@
 import { TriggerJobSchema } from "@repo/db";
-import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import * as v from "valibot";
@@ -18,8 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { adminMiddleware } from "~/lib/admin-middleware";
 import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
+import { createAdminServerFn } from "~/lib/server-fn";
 
 // --- Types ---
 
@@ -51,16 +49,14 @@ interface RegisteredJob {
 
 // --- Server Functions ---
 
-const getRegisteredJobs = createServerFn({ method: "GET" })
-  .middleware([adminMiddleware, tracingMiddleware])
-  .handler(async (): Promise<RegisteredJob[]> => {
-    const { jobs } = await import("~/jobs/registry");
-    return Object.values(jobs).map((j) => ({
-      name: j.name,
-      description: j.description,
-      cron: j.cron,
-    }));
-  });
+const getRegisteredJobs = createAdminServerFn().handler(async (): Promise<RegisteredJob[]> => {
+  const { jobs } = await import("~/jobs/registry");
+  return Object.values(jobs).map((j) => ({
+    name: j.name,
+    description: j.description,
+    cron: j.cron,
+  }));
+});
 
 const PAGE_SIZE = 20;
 
@@ -68,8 +64,7 @@ const PaginationSchema = v.object({
   page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
 });
 
-const getJobRuns = createServerFn({ method: "GET" })
-  .middleware([adminMiddleware, tracingMiddleware])
+const getJobRuns = createAdminServerFn()
   .inputValidator(PaginationSchema)
   .handler(async ({ data }): Promise<{ runs: JobRun[]; total: number }> => {
     const { env } = await import("cloudflare:workers");
@@ -91,12 +86,8 @@ const getJobRuns = createServerFn({ method: "GET" })
     return { runs, total: countResult[0]?.count ?? 0 };
   });
 
-const triggerJob = createServerFn({ method: "POST" })
-  .middleware([
-    adminMiddleware,
-    rateLimitMiddleware({ key: "trigger-job", limit: 10, windowSecs: 60 }),
-    tracingMiddleware,
-  ])
+const triggerJob = createAdminServerFn({ method: "POST" })
+  .middleware([rateLimitMiddleware({ key: "trigger-job", limit: 10, windowSecs: 60 })])
   .inputValidator(TriggerJobSchema)
   .handler(async ({ data, context }) => {
     const { env } = await import("cloudflare:workers");

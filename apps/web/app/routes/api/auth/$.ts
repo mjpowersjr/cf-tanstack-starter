@@ -1,3 +1,4 @@
+// @public — better-auth handles its own session/auth checks
 import { createFileRoute } from "@tanstack/react-router";
 
 // Rate limit config per auth action (path suffix → limit, windowSecs)

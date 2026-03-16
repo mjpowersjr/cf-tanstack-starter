@@ -1,6 +1,4 @@
-import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import * as v from "valibot";
@@ -17,31 +15,26 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { adminMiddleware } from "~/lib/admin-middleware";
 import { authClient } from "~/lib/auth";
+import { createAdminServerFn } from "~/lib/server-fn";
 
-const getSignupStatus = createServerFn({ method: "GET" })
-  .middleware([adminMiddleware, tracingMiddleware])
-  .handler(async () => {
-    const { env } = await import("cloudflare:workers");
-    return env.SIGNUP_ENABLED !== "false";
-  });
+const getSignupStatus = createAdminServerFn().handler(async () => {
+  const { env } = await import("cloudflare:workers");
+  return env.SIGNUP_ENABLED !== "false";
+});
 
-const getFeatureFlags = createServerFn({ method: "GET" })
-  .middleware([adminMiddleware, tracingMiddleware])
-  .handler(async () => {
-    const { env } = await import("cloudflare:workers");
-    const { listFlags } = await import("~/lib/feature-flags");
-    return listFlags(env.FLAGS);
-  });
+const getFeatureFlags = createAdminServerFn().handler(async () => {
+  const { env } = await import("cloudflare:workers");
+  const { listFlags } = await import("~/lib/feature-flags");
+  return listFlags(env.FLAGS);
+});
 
 const FlagSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1), v.maxLength(100)),
   enabled: v.boolean(),
 });
 
-const setFeatureFlag = createServerFn({ method: "POST" })
-  .middleware([adminMiddleware, tracingMiddleware])
+const setFeatureFlag = createAdminServerFn({ method: "POST" })
   .inputValidator(FlagSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
@@ -54,8 +47,7 @@ const DeleteFlagSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1)),
 });
 
-const deleteFeatureFlag = createServerFn({ method: "POST" })
-  .middleware([adminMiddleware, tracingMiddleware])
+const deleteFeatureFlag = createAdminServerFn({ method: "POST" })
   .inputValidator(DeleteFlagSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");

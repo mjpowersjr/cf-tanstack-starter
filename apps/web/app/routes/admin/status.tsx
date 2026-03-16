@@ -1,94 +1,90 @@
-import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import { LoadingSkeleton } from "~/components/loading";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { adminMiddleware } from "~/lib/admin-middleware";
+import { createAdminServerFn } from "~/lib/server-fn";
 
 // --- Server Functions ---
 
-const getSystemStatus = createServerFn({ method: "GET" })
-  .middleware([adminMiddleware, tracingMiddleware])
-  .handler(async () => {
-    const { env } = await import("cloudflare:workers");
-    const { createDb, uploadedFiles } = await import("@repo/db");
-    const { sql } = await import("drizzle-orm");
-    const db = createDb(env.DB);
+const getSystemStatus = createAdminServerFn().handler(async () => {
+  const { env } = await import("cloudflare:workers");
+  const { createDb, uploadedFiles } = await import("@repo/db");
+  const { sql } = await import("drizzle-orm");
+  const db = createDb(env.DB);
 
-    const checks: Record<string, { status: "ok" | "error"; detail?: string }> = {};
+  const checks: Record<string, { status: "ok" | "error"; detail?: string }> = {};
 
-    // D1
-    try {
-      const result = await env.DB.prepare("SELECT 1 as ok").first<{ ok: number }>();
-      checks.d1 = { status: result?.ok === 1 ? "ok" : "error" };
-    } catch (e) {
-      checks.d1 = { status: "error", detail: e instanceof Error ? e.message : String(e) };
-    }
+  // D1
+  try {
+    const result = await env.DB.prepare("SELECT 1 as ok").first<{ ok: number }>();
+    checks.d1 = { status: result?.ok === 1 ? "ok" : "error" };
+  } catch (e) {
+    checks.d1 = { status: "error", detail: e instanceof Error ? e.message : String(e) };
+  }
 
-    // R2
-    try {
-      await env.BUCKET.list({ limit: 1 });
-      checks.r2 = { status: "ok" };
-    } catch (e) {
-      checks.r2 = { status: "error", detail: e instanceof Error ? e.message : String(e) };
-    }
+  // R2
+  try {
+    await env.BUCKET.list({ limit: 1 });
+    checks.r2 = { status: "ok" };
+  } catch (e) {
+    checks.r2 = { status: "error", detail: e instanceof Error ? e.message : String(e) };
+  }
 
-    // KV (Rate Limit)
-    try {
-      await env.RATE_LIMIT.get("__health_check__");
-      checks.kv_rate_limit = { status: "ok" };
-    } catch (e) {
-      checks.kv_rate_limit = {
-        status: "error",
-        detail: e instanceof Error ? e.message : String(e),
-      };
-    }
-
-    // KV (Flags)
-    try {
-      await env.FLAGS.get("__health_check__");
-      checks.kv_flags = { status: "ok" };
-    } catch (e) {
-      checks.kv_flags = { status: "error", detail: e instanceof Error ? e.message : String(e) };
-    }
-
-    // Stats
-    const stats: Record<string, number> = {};
-    try {
-      const [userCount] = await db.select({ count: sql<number>`count(*)` }).from(sql`user`);
-      stats.users = userCount?.count ?? 0;
-
-      const [sessionCount] = await db.select({ count: sql<number>`count(*)` }).from(sql`session`);
-      stats.sessions = sessionCount?.count ?? 0;
-
-      const [fileCount] = await db.select({ count: sql<number>`count(*)` }).from(uploadedFiles);
-      stats.files = fileCount?.count ?? 0;
-
-      const [entryCount] = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(sql`guestbook_entries`);
-      stats.guestbook_entries = entryCount?.count ?? 0;
-
-      const [jobRunCount] = await db.select({ count: sql<number>`count(*)` }).from(sql`job_runs`);
-      stats.job_runs = jobRunCount?.count ?? 0;
-    } catch {
-      // Stats are best-effort
-    }
-
-    return {
-      timestamp: new Date().toISOString(),
-      checks,
-      stats,
-      config: {
-        signup_enabled: env.SIGNUP_ENABLED !== "false",
-        email_configured: !!env.RESEND_API_KEY,
-      },
+  // KV (Rate Limit)
+  try {
+    await env.RATE_LIMIT.get("__health_check__");
+    checks.kv_rate_limit = { status: "ok" };
+  } catch (e) {
+    checks.kv_rate_limit = {
+      status: "error",
+      detail: e instanceof Error ? e.message : String(e),
     };
-  });
+  }
+
+  // KV (Flags)
+  try {
+    await env.FLAGS.get("__health_check__");
+    checks.kv_flags = { status: "ok" };
+  } catch (e) {
+    checks.kv_flags = { status: "error", detail: e instanceof Error ? e.message : String(e) };
+  }
+
+  // Stats
+  const stats: Record<string, number> = {};
+  try {
+    const [userCount] = await db.select({ count: sql<number>`count(*)` }).from(sql`user`);
+    stats.users = userCount?.count ?? 0;
+
+    const [sessionCount] = await db.select({ count: sql<number>`count(*)` }).from(sql`session`);
+    stats.sessions = sessionCount?.count ?? 0;
+
+    const [fileCount] = await db.select({ count: sql<number>`count(*)` }).from(uploadedFiles);
+    stats.files = fileCount?.count ?? 0;
+
+    const [entryCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(sql`guestbook_entries`);
+    stats.guestbook_entries = entryCount?.count ?? 0;
+
+    const [jobRunCount] = await db.select({ count: sql<number>`count(*)` }).from(sql`job_runs`);
+    stats.job_runs = jobRunCount?.count ?? 0;
+  } catch {
+    // Stats are best-effort
+  }
+
+  return {
+    timestamp: new Date().toISOString(),
+    checks,
+    stats,
+    config: {
+      signup_enabled: env.SIGNUP_ENABLED !== "false",
+      email_configured: !!env.RESEND_API_KEY,
+    },
+  };
+});
 
 // --- Route ---
 
