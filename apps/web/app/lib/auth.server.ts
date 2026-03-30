@@ -12,14 +12,25 @@ export function createAuth(env: Cloudflare.Env) {
     database: drizzleAdapter(db, { provider: "sqlite" }),
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
+    trustedOrigins: [env.BETTER_AUTH_URL],
     emailAndPassword: {
       enabled: true,
       sendResetPassword: async ({ user, url }) => {
         const { sendEmail } = await import("~/lib/email");
+        const safeName = user.name.replace(/[&<>"']/g, (c) => {
+          const entities: Record<string, string> = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          };
+          return entities[c] ?? c;
+        });
         await sendEmail(env, {
           to: user.email,
           subject: "Reset your password",
-          html: `<p>Hi ${user.name},</p><p>Click the link below to reset your password:</p><p><a href="${url}">${url}</a></p><p>This link expires in 1 hour.</p>`,
+          html: `<p>Hi ${safeName},</p><p>Click the link below to reset your password:</p><p><a href="${url}">${url}</a></p><p>This link expires in 1 hour.</p>`,
         });
       },
     },

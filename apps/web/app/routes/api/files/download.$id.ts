@@ -30,10 +30,23 @@ export const Route = createFileRoute("/api/files/download/$id")({
           return new Response("File not found in storage", { status: 404 });
         }
 
+        // Force download for types that could execute scripts (SVG, HTML, XML)
+        const INLINE_SAFE_TYPES = [
+          "image/jpeg",
+          "image/png",
+          "image/gif",
+          "image/webp",
+          "application/pdf",
+          "text/plain",
+          "text/csv",
+        ];
+        const disposition = INLINE_SAFE_TYPES.includes(file.contentType) ? "inline" : "attachment";
+        const safeFilename = file.filename.replace(/["\\\r\n]/g, "_");
+
         return new Response(object.body, {
           headers: {
             "Content-Type": file.contentType,
-            "Content-Disposition": `inline; filename="${file.filename}"`,
+            "Content-Disposition": `${disposition}; filename="${safeFilename}"`,
             "Content-Length": String(file.size),
             "Cache-Control": "private, max-age=3600",
           },
