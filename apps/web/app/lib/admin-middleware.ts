@@ -1,5 +1,4 @@
 import { createMiddleware } from "@tanstack/react-start";
-import { getRequestHeaders } from "@tanstack/react-start/server";
 
 /**
  * TanStack Start middleware that restricts access to admin-only server functions.
@@ -18,7 +17,8 @@ import { getRequestHeaders } from "@tanstack/react-start/server";
  */
 export const adminMiddleware = createMiddleware().server(async ({ next }) => {
   const { env } = await import("cloudflare:workers");
-  const { createAuth } = await import("~/lib/auth.server");
+  const { createAuth } = await import("~/lib/auth-server");
+  const { getRequestHeaders } = await import("@tanstack/react-start/server");
   const auth = createAuth(env);
   const headers = getRequestHeaders();
   const session = await auth.api.getSession({ headers });

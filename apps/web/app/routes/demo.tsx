@@ -1,5 +1,7 @@
 import { AddEntrySchema, FileIdSchema, UploadFileSchema } from "@repo/db";
+import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import * as v from "valibot";
@@ -21,13 +23,13 @@ import {
 import { Textarea } from "~/components/ui/textarea";
 import { formatSize } from "~/lib/format";
 import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
-import { createPublicServerFn } from "~/lib/server-fn";
 
 // --- Server Functions ---
 
 const ENTRIES_PAGE_SIZE = 10;
 
-const getEntries = createPublicServerFn()
+const getEntries = createServerFn({ method: "GET" })
+  .middleware([tracingMiddleware])
   .inputValidator(v.object({ page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1) }))
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
@@ -47,8 +49,11 @@ const getEntries = createPublicServerFn()
     return { entries, total: countResult[0]?.count ?? 0 };
   });
 
-const addEntry = createPublicServerFn({ method: "POST" })
-  .middleware([rateLimitMiddleware({ key: "add-entry", limit: 30, windowSecs: 60 })])
+const addEntry = createServerFn({ method: "POST" })
+  .middleware([
+    rateLimitMiddleware({ key: "add-entry", limit: 30, windowSecs: 60 }),
+    tracingMiddleware,
+  ])
   .inputValidator(AddEntrySchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
@@ -61,16 +66,21 @@ const addEntry = createPublicServerFn({ method: "POST" })
     return { success: true };
   });
 
-const getFiles = createPublicServerFn().handler(async () => {
-  const { env } = await import("cloudflare:workers");
-  const { createDb, uploadedFiles } = await import("@repo/db");
-  const { desc } = await import("drizzle-orm");
-  const db = createDb(env.DB);
-  return db.select().from(uploadedFiles).orderBy(desc(uploadedFiles.createdAt));
-});
+const getFiles = createServerFn({ method: "GET" })
+  .middleware([tracingMiddleware])
+  .handler(async () => {
+    const { env } = await import("cloudflare:workers");
+    const { createDb, uploadedFiles } = await import("@repo/db");
+    const { desc } = await import("drizzle-orm");
+    const db = createDb(env.DB);
+    return db.select().from(uploadedFiles).orderBy(desc(uploadedFiles.createdAt));
+  });
 
-const uploadFile = createPublicServerFn({ method: "POST" })
-  .middleware([rateLimitMiddleware({ key: "upload-file", limit: 10, windowSecs: 60 })])
+const uploadFile = createServerFn({ method: "POST" })
+  .middleware([
+    rateLimitMiddleware({ key: "upload-file", limit: 10, windowSecs: 60 }),
+    tracingMiddleware,
+  ])
   .inputValidator(UploadFileSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
@@ -93,8 +103,11 @@ const uploadFile = createPublicServerFn({ method: "POST" })
     return { success: true };
   });
 
-const deleteFile = createPublicServerFn({ method: "POST" })
-  .middleware([rateLimitMiddleware({ key: "delete-file", limit: 20, windowSecs: 60 })])
+const deleteFile = createServerFn({ method: "POST" })
+  .middleware([
+    rateLimitMiddleware({ key: "delete-file", limit: 20, windowSecs: 60 }),
+    tracingMiddleware,
+  ])
   .inputValidator(FileIdSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");

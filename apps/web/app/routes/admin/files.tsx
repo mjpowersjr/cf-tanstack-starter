@@ -1,5 +1,7 @@
 import { FileIdSchema } from "@repo/db";
+import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import * as v from "valibot";
@@ -16,15 +18,16 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import { adminMiddleware } from "~/lib/admin-middleware";
 import { formatSize } from "~/lib/format";
 import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
-import { createAdminServerFn } from "~/lib/server-fn";
 
 // --- Server Functions ---
 
 const PAGE_SIZE = 20;
 
-const getFilesAdmin = createAdminServerFn()
+const getFilesAdmin = createServerFn({ method: "GET" })
+  .middleware([adminMiddleware, tracingMiddleware])
   .inputValidator(v.object({ page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1) }))
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
@@ -46,8 +49,12 @@ const getFilesAdmin = createAdminServerFn()
     return { files, total: countResult[0]?.count ?? 0 };
   });
 
-const deleteFileAdmin = createAdminServerFn({ method: "POST" })
-  .middleware([rateLimitMiddleware({ key: "admin-delete-file", limit: 30, windowSecs: 60 })])
+const deleteFileAdmin = createServerFn({ method: "POST" })
+  .middleware([
+    adminMiddleware,
+    rateLimitMiddleware({ key: "admin-delete-file", limit: 30, windowSecs: 60 }),
+    tracingMiddleware,
+  ])
   .inputValidator(FileIdSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");

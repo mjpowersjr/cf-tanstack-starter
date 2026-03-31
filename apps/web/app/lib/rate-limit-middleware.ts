@@ -1,5 +1,4 @@
 import { createMiddleware } from "@tanstack/react-start";
-import { getRequestHeaders } from "@tanstack/react-start/server";
 import { checkRateLimit } from "./rate-limit";
 
 /**
@@ -16,6 +15,7 @@ import { checkRateLimit } from "./rate-limit";
 export function rateLimitMiddleware(opts: { key: string; limit: number; windowSecs: number }) {
   return createMiddleware().server(async ({ next }) => {
     const { env } = await import("cloudflare:workers");
+    const { getRequestHeaders } = await import("@tanstack/react-start/server");
 
     const headers = getRequestHeaders();
     const ip =

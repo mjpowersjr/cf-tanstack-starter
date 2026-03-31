@@ -33,7 +33,7 @@ async function handleAuth(request: Request): Promise<Response> {
     }
   }
 
-  const { createAuth } = await import("~/lib/auth.server");
+  const { createAuth } = await import("~/lib/auth-server");
   return createAuth(env).handler(request);
 }
 

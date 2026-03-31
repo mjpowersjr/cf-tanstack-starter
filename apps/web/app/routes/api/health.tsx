@@ -1,25 +1,28 @@
+import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute } from "@tanstack/react-router";
-import { createPublicServerFn } from "~/lib/server-fn";
+import { createServerFn } from "@tanstack/react-start";
 
-const checkHealth = createPublicServerFn().handler(async () => {
-  const { env } = await import("cloudflare:workers");
+const checkHealth = createServerFn({ method: "GET" })
+  .middleware([tracingMiddleware])
+  .handler(async () => {
+    const { env } = await import("cloudflare:workers");
 
-  let dbStatus: "ok" | "error" = "error";
-  try {
-    await env.DB.prepare("SELECT 1").run();
-    dbStatus = "ok";
-  } catch {
-    dbStatus = "error";
-  }
+    let dbStatus: "ok" | "error" = "error";
+    try {
+      await env.DB.prepare("SELECT 1").run();
+      dbStatus = "ok";
+    } catch {
+      dbStatus = "error";
+    }
 
-  return {
-    status: "ok" as const,
-    timestamp: new Date().toISOString(),
-    services: {
-      d1: dbStatus,
-    },
-  };
-});
+    return {
+      status: "ok" as const,
+      timestamp: new Date().toISOString(),
+      services: {
+        d1: dbStatus,
+      },
+    };
+  });
 
 export const Route = createFileRoute("/api/health")({
   loader: () => checkHealth(),

@@ -8,37 +8,30 @@ function readFile(file: string): string {
 }
 
 /**
- * Enforces that route files and lib files use createAdminServerFn / createPublicServerFn
- * from ~/lib/server-fn instead of importing createServerFn directly from @tanstack/react-start.
- *
- * The only file allowed to import createServerFn directly is lib/server-fn.ts (the factory).
+ * Enforces that admin server functions include adminMiddleware.
+ * Any file under routes/admin/ that uses createServerFn must also reference adminMiddleware.
  */
-describe("server function imports", () => {
-  const ALLOWED_FILES = ["app/lib/server-fn.ts"];
-
-  function getSourceFiles(): string[] {
-    const routes = globSync("app/routes/**/*.{ts,tsx}", { cwd: ROOT });
-    const lib = globSync("app/lib/**/*.{ts,tsx}", { cwd: ROOT });
-    return [...routes, ...lib].filter((f) => !ALLOWED_FILES.includes(f));
+describe("admin server function auth", () => {
+  function getAdminRouteFiles(): string[] {
+    return globSync("app/routes/admin/**/*.{ts,tsx}", { cwd: ROOT });
   }
 
-  it("no files import createServerFn directly from @tanstack/react-start", () => {
+  it("all admin route server functions use adminMiddleware", () => {
     const violations: string[] = [];
 
-    for (const file of getSourceFiles()) {
+    for (const file of getAdminRouteFiles()) {
       const content = readFile(file);
-      if (
-        /import\s+\{[^}]*createServerFn[^}]*\}\s+from\s+["']@tanstack\/react-start["']/.test(
-          content,
-        )
-      ) {
+      const hasServerFn = /createServerFn\s*\(/.test(content);
+      const hasAdminMiddleware = /adminMiddleware/.test(content);
+
+      if (hasServerFn && !hasAdminMiddleware) {
         violations.push(file);
       }
     }
 
     expect(
       violations,
-      `These files import createServerFn directly. Use createAdminServerFn or createPublicServerFn from "~/lib/server-fn" instead:\n${violations.join("\n")}`,
+      `These admin route files use createServerFn without adminMiddleware:\n${violations.join("\n")}`,
     ).toEqual([]);
   });
 });
@@ -47,8 +40,6 @@ describe("server function imports", () => {
  * Enforces that every file defining server.handlers either:
  * 1. Calls requireAuth/requireAdmin from ~/lib/auth-guard, OR
  * 2. Has a `// @public` annotation to explicitly mark it as intentionally unauthenticated
- *
- * This prevents accidentally exposing unprotected API endpoints.
  */
 describe("server.handlers auth", () => {
   function getHandlerFiles(): string[] {

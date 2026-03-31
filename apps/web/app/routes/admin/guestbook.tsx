@@ -1,5 +1,7 @@
 import { AddEntrySchema, EntryIdSchema, UpdateEntrySchema } from "@repo/db";
+import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import * as v from "valibot";
@@ -26,8 +28,8 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import { adminMiddleware } from "~/lib/admin-middleware";
 import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
-import { createAdminServerFn } from "~/lib/server-fn";
 
 // --- Server Functions ---
 
@@ -38,7 +40,8 @@ const PaginationSchema = v.object({
   sort: v.optional(v.picklist(["newest", "oldest", "name"]), "newest"),
 });
 
-const getEntries = createAdminServerFn()
+const getEntries = createServerFn({ method: "GET" })
+  .middleware([adminMiddleware, tracingMiddleware])
   .inputValidator(PaginationSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
@@ -62,8 +65,12 @@ const getEntries = createAdminServerFn()
     return { entries, total: countResult[0]?.count ?? 0 };
   });
 
-const createEntry = createAdminServerFn({ method: "POST" })
-  .middleware([rateLimitMiddleware({ key: "admin-create-entry", limit: 30, windowSecs: 60 })])
+const createEntry = createServerFn({ method: "POST" })
+  .middleware([
+    adminMiddleware,
+    rateLimitMiddleware({ key: "admin-create-entry", limit: 30, windowSecs: 60 }),
+    tracingMiddleware,
+  ])
   .inputValidator(AddEntrySchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
@@ -73,8 +80,12 @@ const createEntry = createAdminServerFn({ method: "POST" })
     return { success: true };
   });
 
-const updateEntry = createAdminServerFn({ method: "POST" })
-  .middleware([rateLimitMiddleware({ key: "admin-update-entry", limit: 30, windowSecs: 60 })])
+const updateEntry = createServerFn({ method: "POST" })
+  .middleware([
+    adminMiddleware,
+    rateLimitMiddleware({ key: "admin-update-entry", limit: 30, windowSecs: 60 }),
+    tracingMiddleware,
+  ])
   .inputValidator(UpdateEntrySchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
@@ -88,8 +99,12 @@ const updateEntry = createAdminServerFn({ method: "POST" })
     return { success: true };
   });
 
-const deleteEntry = createAdminServerFn({ method: "POST" })
-  .middleware([rateLimitMiddleware({ key: "admin-delete-entry", limit: 30, windowSecs: 60 })])
+const deleteEntry = createServerFn({ method: "POST" })
+  .middleware([
+    adminMiddleware,
+    rateLimitMiddleware({ key: "admin-delete-entry", limit: 30, windowSecs: 60 }),
+    tracingMiddleware,
+  ])
   .inputValidator(EntryIdSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");

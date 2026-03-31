@@ -20,7 +20,7 @@
     {
       "binding": "DB",
       "database_name": "cf-tanstack-starter-db",
-      "database_id": "LOCAL_D1_ID",
+      "database_id": "ac9e5526-234c-43e5-90cc-849ee09a8d3a",
       "migrations_dir": "../../packages/db/drizzle"
     }
   ],
@@ -28,11 +28,11 @@
   "kv_namespaces": [
     {
       "binding": "RATE_LIMIT",
-      "id": "RATE_LIMIT_KV_ID"
+      "id": "73e4739104254e7f9637cbece9584e44"
     },
     {
       "binding": "FLAGS",
-      "id": "FLAGS_KV_ID"
+      "id": "d73dbf2dd92f4162ba34ebefbecf377d"
     }
   ],
 
@@ -48,7 +48,7 @@
   },
 
   "vars": {
-    "BETTER_AUTH_URL": "http://localhost:5173",
+    "BETTER_AUTH_URL": "https://cf-tanstack-starter.mjpowersjr.workers.dev",
     "SIGNUP_ENABLED": "true"
   },
 

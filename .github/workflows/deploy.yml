@@ -48,15 +48,14 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
-      # Apply D1 migrations before deploying
+      # Apply D1 migrations via Drizzle Kit (d1-http driver)
       - name: Apply D1 Migrations
-        working-directory: apps/web
-        run: |
-          npx wrangler d1 migrations apply DB --remote \
-            ${{ github.ref_name != 'main' && '--env staging' || '' }}
+        working-directory: packages/db
+        run: pnpm db:migrate
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_D1_TOKEN: ${{ secrets.CLOUDFLARE_D1_TOKEN }}
+          CLOUDFLARE_DATABASE_ID: ${{ github.ref_name == 'main' && secrets.CLOUDFLARE_DATABASE_ID || secrets.CLOUDFLARE_DATABASE_ID_STAGING }}
 
       - name: Deploy to Cloudflare Workers
         id: deploy

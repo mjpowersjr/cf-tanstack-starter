@@ -2,26 +2,25 @@
 
 ## Server Functions
 
-- **NEVER** import `createServerFn` from `@tanstack/react-start` directly in route or lib files
-- Use `createAdminServerFn` or `createPublicServerFn` from `~/lib/server-fn`
-- `createAdminServerFn` pre-applies `adminMiddleware` (session + admin role check) + `tracingMiddleware`
-- `createPublicServerFn` pre-applies `tracingMiddleware` only
-- Chain `.middleware([rateLimitMiddleware(...)])` for rate limiting — middleware accumulates across calls
-- The only file allowed to import raw `createServerFn` is `apps/web/app/lib/server-fn.ts`
-- A test in `tests/server-fn-lint.test.ts` enforces this at CI time
+- Use `createServerFn` from `@tanstack/react-start` directly (wrapper functions break TanStack Start's build-time import protection)
+- Admin server functions **MUST** include `adminMiddleware` from `~/lib/admin-middleware` in their `.middleware([...])` array
+- All server functions should include `tracingMiddleware` from `@repo/observability/middleware`
+- A test in `tests/server-fn-lint.test.ts` enforces adminMiddleware usage in admin routes at CI time
 - Admin handlers can access `context.session` (provided by `adminMiddleware`)
+- Server-only imports (`cloudflare:workers`, `@repo/db`, etc.) must use dynamic `await import()` inside handlers
 
 ```ts
 // Admin endpoint (auth required):
-const myFn = createAdminServerFn({ method: "POST" })
-  .middleware([rateLimitMiddleware({ key: "my-fn", limit: 10, windowSecs: 60 })])
+const myFn = createServerFn({ method: "POST" })
+  .middleware([adminMiddleware, rateLimitMiddleware({ key: "my-fn", limit: 10, windowSecs: 60 }), tracingMiddleware])
   .inputValidator(MySchema)
   .handler(async ({ data, context }) => {
     const userId = context.session.user.id;
   });
 
 // Public endpoint (no auth):
-const myFn = createPublicServerFn()
+const myFn = createServerFn({ method: "GET" })
+  .middleware([tracingMiddleware])
   .handler(async () => { ... });
 ```
 

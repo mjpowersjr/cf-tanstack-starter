@@ -22,7 +22,7 @@ type Session = {
 
 export async function requireAuth(request: Request): Promise<Session | Response> {
   const { env } = await import("cloudflare:workers");
-  const { createAuth } = await import("~/lib/auth.server");
+  const { createAuth } = await import("~/lib/auth-server");
   const auth = createAuth(env);
   const session = await auth.api.getSession({ headers: request.headers });
 
