@@ -67,13 +67,15 @@ test.describe("server function round-trip", () => {
     const nameInput = page.getByPlaceholder("Your name");
     const messageInput = page.getByPlaceholder("Your message");
 
-    // Fill, then assert the value stuck before submitting. React-controlled
-    // inputs (especially with React 19) can swallow the input event if state
-    // hasn't initialized; toHaveValue auto-waits and fails fast if React
-    // never reflects the value.
-    await nameInput.fill(name);
+    // pressSequentially types char-by-char with real keydown/keypress/input
+    // events, which reliably triggers React 19's controlled-input onChange.
+    // `fill` sometimes sets the DOM value without React state catching up,
+    // and the form's empty-field early-return then silently no-ops.
+    await nameInput.click();
+    await nameInput.pressSequentially(name);
     await expect(nameInput).toHaveValue(name);
-    await messageInput.fill(message);
+    await messageInput.click();
+    await messageInput.pressSequentially(message);
     await expect(messageInput).toHaveValue(message);
 
     await page.getByRole("button", { name: "Sign Guestbook" }).click();
