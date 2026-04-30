@@ -1,0 +1,71 @@
+name: shadcn update
+
+on:
+  workflow_dispatch:
+    inputs:
+      components:
+        description: "Components to update (space-separated). Leave blank to update all."
+        required: false
+        type: string
+
+env:
+  PNPM_VERSION: "10.6.3"
+  NODE_VERSION: "22"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    name: Update shadcn components
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run update
+        run: |
+          if [ -n "${{ inputs.components }}" ]; then
+            pnpm shadcn:update ${{ inputs.components }}
+          else
+            pnpm shadcn:update --all
+          fi
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if [ -z "$(git status --porcelain apps/web/app/components/ui/)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No upstream changes — nothing to do."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open PR
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DATE=$(date -u +%Y%m%d)
+          BRANCH="chore/shadcn-update-${DATE}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add apps/web/app/components/ui/
+          git commit -m "chore: update shadcn components from upstream"
+          git push -u origin "$BRANCH"
+          gh pr create \
+            --title "chore: update shadcn components ($DATE)" \
+            --body "Automated upgrade via \`pnpm shadcn:update\`. Review the diff carefully — any local customizations to the touched files were overwritten." \
+            --label "dependencies"
