@@ -17,6 +17,8 @@
     "db:seed": "pnpm --filter @repo/db db:seed:generate && pnpm --filter @repo/web db:seed",
     "db:studio": "pnpm --filter @repo/db db:studio",
     "db:snapshot": "pnpm --filter @repo/web db:snapshot",
+    "shadcn:diff": "pnpm --filter @repo/web shadcn:diff",
+    "shadcn:update": "pnpm --filter @repo/web shadcn:update",
     "deploy": "pnpm --filter @repo/web deploy",
     "deploy:staging": "pnpm --filter @repo/web deploy:staging",
     "preview": "pnpm --filter @repo/web preview",

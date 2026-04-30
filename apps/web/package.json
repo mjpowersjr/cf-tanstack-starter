@@ -17,6 +17,8 @@
     "preview": "wrangler dev --remote",
     "tail": "wrangler tail",
     "db:snapshot": "pnpm --filter @repo/db db:snapshot",
+    "shadcn:diff": "tsx scripts/shadcn.ts diff",
+    "shadcn:update": "tsx scripts/shadcn.ts update",
     "cf:secret:list": "wrangler secret list",
     "cf:secret:put": "wrangler secret put"
   },
