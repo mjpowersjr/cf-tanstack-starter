@@ -63,11 +63,20 @@ test.describe("server function round-trip", () => {
     await page.goto("/demo");
     const name = `e2e-${Date.now()}`;
     const message = `posted from playwright at ${new Date().toISOString()}`;
-    await page.getByPlaceholder("Your name").fill(name);
-    await page.getByPlaceholder("Your message").fill(message);
+
+    const nameInput = page.getByPlaceholder("Your name");
+    const messageInput = page.getByPlaceholder("Your message");
+
+    // Fill, then assert the value stuck before submitting. React-controlled
+    // inputs (especially with React 19) can swallow the input event if state
+    // hasn't initialized; toHaveValue auto-waits and fails fast if React
+    // never reflects the value.
+    await nameInput.fill(name);
+    await expect(nameInput).toHaveValue(name);
+    await messageInput.fill(message);
+    await expect(messageInput).toHaveValue(message);
+
     await page.getByRole("button", { name: "Sign Guestbook" }).click();
-    // Entry shows up after the server fn completes and the loader refetches.
-    // Network-idle wait gives addEntry + the refetch time to settle.
     await page.waitForLoadState("networkidle");
     await expect(page.getByText(name)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(message)).toBeVisible();
