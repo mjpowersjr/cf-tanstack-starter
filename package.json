@@ -7,6 +7,7 @@
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "test:watch": "turbo test:watch",
+    "e2e": "pnpm --filter @repo/web e2e",
     "lint": "biome check .",
     "format": "biome format --write .",
     "check": "biome check --write .",

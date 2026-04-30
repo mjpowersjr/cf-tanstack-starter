@@ -10,3 +10,6 @@ dist
 routeTree.gen.ts
 seed.sql
 db-snapshot.sql
+test-results
+playwright-report
+.playwright
