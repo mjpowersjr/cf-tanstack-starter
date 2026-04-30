@@ -28,14 +28,13 @@
     }
   },
   "files": {
-    "includes": [
-      "**/*.ts",
-      "**/*.tsx",
-      "**/*.js",
-      "**/*.jsx",
-      "**/*.json",
-      "**/*.jsonc",
-      "!apps/web/app/components/ui"
-    ]
-  }
+    "includes": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.json", "**/*.jsonc"]
+  },
+  "overrides": [
+    {
+      "includes": ["apps/web/app/components/ui/**"],
+      "formatter": { "enabled": false },
+      "assist": { "enabled": false }
+    }
+  ]
 }
