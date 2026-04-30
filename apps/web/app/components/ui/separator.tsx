@@ -8,7 +8,6 @@ const Separator = React.forwardRef<
     decorative?: boolean;
   }
 >(({ className, orientation = "horizontal", decorative = true, ...props }, ref) => (
-  // biome-ignore lint/a11y/useAriaPropsSupportedByRole: aria-orientation is only set when role="separator"; biome can't see the conditional
   <div
     ref={ref}
     role={decorative ? "none" : "separator"}
