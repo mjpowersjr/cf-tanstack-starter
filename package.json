@@ -25,10 +25,10 @@
     "cf:secret:put": "pnpm --filter @repo/web cf:secret:put"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.6",
+    "@biomejs/biome": "^2.4.13",
     "lefthook": "^1.13.6",
     "tsx": "^4.21.0",
-    "turbo": "2.8.15"
+    "turbo": "2.9.6"
   },
   "packageManager": "pnpm@10.6.3",
   "pnpm": {
