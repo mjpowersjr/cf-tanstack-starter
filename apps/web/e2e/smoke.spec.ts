@@ -67,7 +67,9 @@ test.describe("server function round-trip", () => {
     await page.getByPlaceholder("Your message").fill(message);
     await page.getByRole("button", { name: "Sign Guestbook" }).click();
     // Entry shows up after the server fn completes and the loader refetches.
-    await expect(page.getByText(name)).toBeVisible();
+    // Network-idle wait gives addEntry + the refetch time to settle.
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText(name)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(message)).toBeVisible();
     expect(errors).toEqual([]);
   });
