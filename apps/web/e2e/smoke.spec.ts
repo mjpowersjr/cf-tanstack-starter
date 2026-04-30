@@ -32,8 +32,11 @@ test.describe("public pages render without runtime errors", () => {
   test("demo loads guestbook + file upload sections", async ({ page }) => {
     const errors = attachErrorTracker(page);
     await page.goto("/demo");
-    await expect(page.getByText("Guestbook", { exact: true })).toBeVisible();
-    await expect(page.getByText("File Upload", { exact: true })).toBeVisible();
+    // The CardTitle elements contain "Guestbook" / "File Upload" plus a
+    // child Badge ("D1" / "R2") so an exact text match fails; assert via the
+    // unique CardDescription text instead.
+    await expect(page.getByText(/Sign the guestbook/i)).toBeVisible();
+    await expect(page.getByText(/Upload files to Cloudflare R2/i)).toBeVisible();
     await expect(page.getByPlaceholder("Your name")).toBeVisible();
     expect(errors).toEqual([]);
   });
