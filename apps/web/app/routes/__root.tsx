@@ -12,6 +12,7 @@ import { DefaultErrorComponent, NotFoundComponent } from "~/components/error-bou
 import { LoadingSkeleton } from "~/components/loading";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { authClient } from "~/lib/auth";
+import { getFlags } from "~/lib/get-flags";
 import { getSession } from "~/lib/get-session";
 import appCss from "~/styles/globals.css?url";
 
@@ -40,8 +41,8 @@ export const Route = createRootRoute({
     ],
   }),
   beforeLoad: async () => {
-    const session = await getSession();
-    return { session };
+    const [session, flags] = await Promise.all([getSession(), getFlags()]);
+    return { session, flags };
   },
   component: RootComponent,
   pendingComponent: LoadingSkeleton,
@@ -61,7 +62,7 @@ function RootComponent() {
   };
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
         <script

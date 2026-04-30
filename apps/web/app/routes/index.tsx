@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useFlag } from "~/lib/use-flag";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -48,8 +49,19 @@ const techStack = [
 ];
 
 function HomePage() {
+  const showBanner = useFlag("home-banner");
+
   return (
     <div className="space-y-8">
+      {showBanner && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
+          <p>
+            <strong>Feature flag demo:</strong> this banner is gated by the{" "}
+            <code className="text-xs">home-banner</code> flag. Toggle it from the admin dashboard to
+            show or hide.
+          </p>
+        </div>
+      )}
       <div className="space-y-2">
         <h1 className="text-4xl font-bold tracking-tight">CF TanStack Starter</h1>
         <p className="text-lg text-muted-foreground">

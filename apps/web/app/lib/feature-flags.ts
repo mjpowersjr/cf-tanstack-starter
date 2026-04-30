@@ -34,3 +34,17 @@ export async function listFlags(kv: KVNamespace): Promise<{ name: string; enable
   }
   return flags;
 }
+
+/**
+ * Bulk-fetch enabled flags as a record. Suitable for loading once per
+ * request and passing to the client via the router context, then read with
+ * `useFlag(name)`. Disabled and unset flags are omitted from the record.
+ */
+export async function getEnabledFlags(kv: KVNamespace): Promise<Record<string, boolean>> {
+  const all = await listFlags(kv);
+  const record: Record<string, boolean> = {};
+  for (const flag of all) {
+    if (flag.enabled) record[flag.name] = true;
+  }
+  return record;
+}
