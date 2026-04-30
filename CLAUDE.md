@@ -58,6 +58,40 @@ export const Route = createFileRoute("/api/example")({ ... });
 - Valibot (not Zod) for all schemas
 - Schemas live in `packages/db/src/validation.ts`
 
+## D1 Migrations
+
+- One unified runner: `pnpm db:migrate:local` and `pnpm db:migrate:remote` both invoke `packages/db/scripts/migrate.ts`
+- Tracking lives **inside D1** in the standard `__drizzle_migrations` table (`id, hash, created_at, name, applied_at`) — schema and sha256 hashing match drizzle-orm's d1 migrator exactly, so the table is interchangeable with `drizzle-kit migrate`
+- Because tracking is in-database, `wrangler d1 export DB --remote` carries migration history with the snapshot — `pnpm db:snapshot` restores prod locally and `pnpm db:migrate:local` correctly applies only undeployed migrations on top
+- **Do NOT** use `wrangler d1 migrations apply` — it expects flat `.sql` files but drizzle generates subdirs (`<timestamp>_<name>/migration.sql`)
+- New migrations: `pnpm db:generate` (drizzle-kit), then `pnpm db:migrate:local` to apply
+
+## Feature Flags
+
+- Server-side utils in `~/lib/feature-flags`: `getFlag`, `setFlag`, `deleteFlag`, `listFlags`, `getEnabledFlags`
+- Flags are stored in the `FLAGS` KV namespace under the `flag:<name>` key
+- Bulk-loaded once per request in `__root.tsx` `beforeLoad` via `getFlags()` from `~/lib/get-flags` and exposed via router context
+- Components consume flags with the `useFlag(name)` hook from `~/lib/use-flag` — no extra network calls
+- Flag names are visible to all clients (loaded into the SSR payload). Gate sensitive logic by checking inside server-only code instead
+
+```tsx
+// Component:
+import { useFlag } from "~/lib/use-flag";
+function MyComponent() {
+  const enabled = useFlag("new-dashboard");
+  return enabled ? <NewDashboard /> : <OldDashboard />;
+}
+
+// Server (admin-only check):
+const myFn = createServerFn({ method: "GET" })
+  .middleware([adminMiddleware, tracingMiddleware])
+  .handler(async () => {
+    const { env } = await import("cloudflare:workers");
+    const { getFlag } = await import("~/lib/feature-flags");
+    if (await getFlag(env.FLAGS, "expensive-feature")) { ... }
+  });
+```
+
 ## Testing
 
 - `pnpm test` runs all tests via turborepo
