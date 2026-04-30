@@ -52,6 +52,33 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
 
+  migration-drift:
+    name: Migration Drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - name: Generate migrations and check for drift
+        run: |
+          pnpm db:generate
+          if [ -n "$(git status --porcelain packages/db/drizzle/)" ]; then
+            echo "::error::Schema in packages/db/src/schema.ts changed but the generated migration file was not committed."
+            echo "Run \`pnpm db:generate\` locally and commit the new file under packages/db/drizzle/."
+            git status packages/db/drizzle/
+            git diff packages/db/drizzle/
+            exit 1
+          fi
+
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -70,3 +97,5 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      - name: Validate Worker bundle and bindings (wrangler dry-run)
+        run: pnpm --filter @repo/web exec wrangler deploy --dry-run
