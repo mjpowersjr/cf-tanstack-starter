@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "4.20260430.1",
-    "@tanstack/react-start": "1.166.6",
+    "@tanstack/react-start": "1.167.52",
     "typescript": "5.9.3",
     "vitest": "^3.2.1"
   }
