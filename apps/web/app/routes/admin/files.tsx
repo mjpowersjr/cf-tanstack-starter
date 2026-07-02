@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { adminMiddleware } from "~/lib/admin-middleware";
-import { formatSize } from "~/lib/format";
+import { formatDate, formatSize } from "~/lib/format";
 import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
 
 // --- Server Functions ---
@@ -70,8 +70,10 @@ const deleteFileAdmin = createServerFn({ method: "POST" })
 
     if (!file) throw new Error("File not found");
 
-    await env.BUCKET.delete(file.r2Key);
+    // DB row first; R2 delete is best-effort (a dangling object is cheap, a
+    // dangling row 404s on download).
     await db.delete(uploadedFiles).where(eq(uploadedFiles.id, data.id));
+    await env.BUCKET.delete(file.r2Key).catch(() => {});
     return { success: true };
   });
 
@@ -100,10 +102,20 @@ function FilesPage() {
   const [page, setPage] = useState(1);
 
   const fetchPage = async (p: number) => {
-    const data = await getFilesAdmin({ data: { page: p } });
-    setFiles(data.files);
-    setTotal(data.total);
-    setPage(p);
+    try {
+      const data = await getFilesAdmin({ data: { page: p } });
+      // Deleting the last item of a trailing page leaves an empty page with
+      // the pagination hidden — step back instead of stranding the user.
+      if (data.files.length === 0 && p > 1) {
+        await fetchPage(p - 1);
+        return;
+      }
+      setFiles(data.files);
+      setTotal(data.total);
+      setPage(p);
+    } catch {
+      toast.error("Failed to load files");
+    }
   };
 
   const handleDelete = async (id: number, filename: string) => {
@@ -174,7 +186,7 @@ function FilesPage() {
                         {file.r2Key}
                       </TableCell>
                       <TableCell className="text-right">{formatSize(file.size)}</TableCell>
-                      <TableCell className="text-sm">{file.createdAt}</TableCell>
+                      <TableCell className="text-sm">{formatDate(file.createdAt)}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="destructive"

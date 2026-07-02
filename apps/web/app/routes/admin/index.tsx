@@ -19,6 +19,7 @@ import {
 } from "~/components/ui/table";
 import { adminMiddleware } from "~/lib/admin-middleware";
 import { authClient } from "~/lib/auth";
+import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
 
 const getSignupStatus = createServerFn({ method: "GET" })
   .middleware([adminMiddleware, tracingMiddleware])
@@ -35,13 +36,25 @@ const getFeatureFlags = createServerFn({ method: "GET" })
     return listFlags(env.FLAGS);
   });
 
+// kebab-case only: `useFlag("my flag ")` typos would otherwise be invisible
+const flagName = v.pipe(
+  v.string(),
+  v.minLength(1),
+  v.maxLength(100),
+  v.regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Flag names must be kebab-case (e.g. new-dashboard)"),
+);
+
 const FlagSchema = v.object({
-  name: v.pipe(v.string(), v.minLength(1), v.maxLength(100)),
+  name: flagName,
   enabled: v.boolean(),
 });
 
 const setFeatureFlag = createServerFn({ method: "POST" })
-  .middleware([adminMiddleware, tracingMiddleware])
+  .middleware([
+    adminMiddleware,
+    rateLimitMiddleware({ key: "set-flag", limit: 30, windowSecs: 60 }),
+    tracingMiddleware,
+  ])
   .inputValidator(FlagSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
@@ -51,11 +64,15 @@ const setFeatureFlag = createServerFn({ method: "POST" })
   });
 
 const DeleteFlagSchema = v.object({
-  name: v.pipe(v.string(), v.minLength(1)),
+  name: flagName,
 });
 
 const deleteFeatureFlag = createServerFn({ method: "POST" })
-  .middleware([adminMiddleware, tracingMiddleware])
+  .middleware([
+    adminMiddleware,
+    rateLimitMiddleware({ key: "delete-flag", limit: 30, windowSecs: 60 }),
+    tracingMiddleware,
+  ])
   .inputValidator(DeleteFlagSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
@@ -119,10 +136,13 @@ function UserList() {
 
   const fetchUsers = async () => {
     setLoading(true);
-    const result = await authClient.admin.listUsers({ query: { limit: 100 } });
-    if (result.data) {
+    try {
+      const result = await authClient.admin.listUsers({ query: { limit: 100 } });
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
       setUsers(
-        result.data.users.map((u) => ({
+        (result.data?.users ?? []).map((u) => ({
           id: u.id,
           name: u.name,
           email: u.email,
@@ -132,29 +152,40 @@ function UserList() {
           createdAt: new Date(u.createdAt).toLocaleDateString(),
         })),
       );
+      setLoaded(true);
+    } catch {
+      toast.error("Failed to load users");
+    } finally {
+      setLoading(false);
     }
-    setLoaded(true);
-    setLoading(false);
   };
 
-  const handleSetRole = async (userId: string, role: "admin" | "user") => {
-    await authClient.admin.setRole({ userId, role });
-    fetchUsers();
-  };
-
-  const handleToggleBan = async (userId: string, banned: boolean) => {
-    if (banned) {
-      await authClient.admin.unbanUser({ userId });
-    } else {
-      await authClient.admin.banUser({ userId });
+  // better-auth returns failures in result.error rather than throwing — an
+  // unchecked call makes failed role changes/bans look like silent no-ops.
+  const runAdminAction = async (label: string, action: () => Promise<{ error: unknown }>) => {
+    try {
+      const result = await action();
+      if (result.error) {
+        throw new Error(String((result.error as { message?: string })?.message ?? label));
+      }
+      toast.success(label);
+      await fetchUsers();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Failed: ${label}`);
     }
-    fetchUsers();
   };
 
-  const handleDelete = async (userId: string) => {
+  const handleSetRole = (userId: string, role: "admin" | "user") =>
+    runAdminAction(`Role set to ${role}`, () => authClient.admin.setRole({ userId, role }));
+
+  const handleToggleBan = (userId: string, banned: boolean) =>
+    banned
+      ? runAdminAction("User unbanned", () => authClient.admin.unbanUser({ userId }))
+      : runAdminAction("User banned", () => authClient.admin.banUser({ userId }));
+
+  const handleDelete = (userId: string) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
-    await authClient.admin.removeUser({ userId });
-    fetchUsers();
+    return runAdminAction("User deleted", () => authClient.admin.removeUser({ userId }));
   };
 
   if (!loaded) {
@@ -259,24 +290,29 @@ function CreateUserForm() {
     setMessage("");
     setSubmitting(true);
 
-    const result = await authClient.admin.createUser({
-      name: username,
-      email,
-      password,
-      role,
-      data: { username, displayUsername: username },
-    });
+    try {
+      const result = await authClient.admin.createUser({
+        name: username,
+        email,
+        password,
+        role,
+        data: { username, displayUsername: username },
+      });
 
-    if (result.error) {
-      setMessage(result.error.message ?? "Failed to create user");
-    } else {
-      setMessage("User created successfully");
-      setUsername("");
-      setEmail("");
-      setPassword("");
-      setRole("user");
+      if (result.error) {
+        setMessage(result.error.message ?? "Failed to create user");
+      } else {
+        setMessage("User created successfully");
+        setUsername("");
+        setEmail("");
+        setPassword("");
+        setRole("user");
+      }
+    } catch {
+      setMessage("Failed to create user");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   return (

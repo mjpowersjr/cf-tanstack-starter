@@ -15,7 +15,9 @@ const getSystemStatus = createServerFn({ method: "GET" })
   .middleware([adminMiddleware, tracingMiddleware])
   .handler(async () => {
     const { env } = await import("cloudflare:workers");
-    const { createDb, uploadedFiles } = await import("@repo/db");
+    const { createDb, guestbookEntries, jobRuns, session, uploadedFiles, user } = await import(
+      "@repo/db"
+    );
     const { sql } = await import("drizzle-orm");
     const db = createDb(env.DB);
 
@@ -56,28 +58,26 @@ const getSystemStatus = createServerFn({ method: "GET" })
       checks.kv_flags = { status: "error", detail: e instanceof Error ? e.message : String(e) };
     }
 
-    // Stats
-    const stats: Record<string, number> = {};
-    try {
-      const [userCount] = await db.select({ count: sql<number>`count(*)` }).from(sql`user`);
-      stats.users = userCount?.count ?? 0;
-
-      const [sessionCount] = await db.select({ count: sql<number>`count(*)` }).from(sql`session`);
-      stats.sessions = sessionCount?.count ?? 0;
-
-      const [fileCount] = await db.select({ count: sql<number>`count(*)` }).from(uploadedFiles);
-      stats.files = fileCount?.count ?? 0;
-
-      const [entryCount] = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(sql`guestbook_entries`);
-      stats.guestbook_entries = entryCount?.count ?? 0;
-
-      const [jobRunCount] = await db.select({ count: sql<number>`count(*)` }).from(sql`job_runs`);
-      stats.job_runs = jobRunCount?.count ?? 0;
-    } catch {
-      // Stats are best-effort
-    }
+    // Stats — parallel, and isolated per table so one failure doesn't blank
+    // out the rest.
+    const statTables = {
+      users: user,
+      sessions: session,
+      files: uploadedFiles,
+      guestbook_entries: guestbookEntries,
+      job_runs: jobRuns,
+    } as const;
+    const statEntries = await Promise.all(
+      Object.entries(statTables).map(async ([name, table]) => {
+        try {
+          const [row] = await db.select({ count: sql<number>`count(*)` }).from(table);
+          return [name, row?.count ?? 0] as const;
+        } catch {
+          return null; // best-effort: omit the stat
+        }
+      }),
+    );
+    const stats = Object.fromEntries(statEntries.filter((e) => e !== null));
 
     return {
       timestamp: new Date().toISOString(),

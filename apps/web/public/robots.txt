@@ -1,2 +1,8 @@
+# Allow everything except the admin panel and API endpoints.
 User-agent: *
+Disallow: /admin
+Disallow: /api/
 Allow: /
+
+# Uncomment once you publish a sitemap:
+# Sitemap: https://your-domain.example/sitemap.xml

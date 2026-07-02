@@ -10,6 +10,7 @@ import {
 import { Toaster } from "sonner";
 import { DefaultErrorComponent, NotFoundComponent } from "~/components/error-boundary";
 import { LoadingSkeleton } from "~/components/loading";
+import { MaintenancePage } from "~/components/maintenance";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { authClient } from "~/lib/auth";
 import { getFlags } from "~/lib/get-flags";
@@ -51,10 +52,20 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-  const { session } = Route.useRouteContext();
+  const { session, flags } = Route.useRouteContext();
   const router = useRouter();
   const location = useLocation();
   const isAdmin = location.pathname.startsWith("/admin");
+
+  // Soft maintenance mode, toggled via the `maintenance-mode` feature flag in
+  // /admin. Admins and the login page bypass it (so an admin can sign in and
+  // turn it off). Server-only work (jobs, API handlers) is unaffected.
+  const isAdminUser = (session?.user as Record<string, unknown> | undefined)?.role === "admin";
+  const underMaintenance =
+    Boolean(flags?.["maintenance-mode"]) &&
+    !isAdminUser &&
+    !isAdmin &&
+    location.pathname !== "/login";
 
   const handleLogout = async () => {
     await authClient.signOut();
@@ -118,7 +129,7 @@ function RootComponent() {
           </nav>
         </header>
         <main className={isAdmin ? "" : "container mx-auto px-4 py-8"}>
-          <Outlet />
+          {underMaintenance ? <MaintenancePage /> : <Outlet />}
         </main>
         <Toaster richColors position="bottom-right" />
         <Scripts />

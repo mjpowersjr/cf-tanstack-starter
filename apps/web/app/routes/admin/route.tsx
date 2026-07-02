@@ -12,7 +12,10 @@ export const Route = createFileRoute("/admin")({
   beforeLoad: async () => {
     const session = await getSession();
     if (!session) throw redirect({ to: "/login" });
-    if ((session.user as Record<string, unknown>).role !== "admin") throw redirect({ to: "/" });
+    // Logged in but not an admin: explain, don't silently bounce home.
+    if ((session.user as Record<string, unknown>).role !== "admin") {
+      throw redirect({ to: "/access-denied" });
+    }
     return { session };
   },
   component: AdminLayout,
