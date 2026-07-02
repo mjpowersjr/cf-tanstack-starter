@@ -1,33 +1,28 @@
 /**
- * Pino-compatible structured logger for Cloudflare Workers.
+ * Structured logger for Cloudflare Workers, backed by pino.
  *
- * Pino's full runtime depends on Node.js streams and worker_threads, which are
- * unavailable in the Workers runtime. This module provides a pino-compatible API
- * (levels, child loggers, structured JSON) that works natively with Cloudflare's
- * Workers Logs and OpenTelemetry-compatible observability pipeline.
+ * Pino's Node build needs streams/worker_threads, which the Workers runtime
+ * doesn't provide — so this uses pino's browser build (imported explicitly as
+ * `pino/browser.js`), which logs through console.*. Cloudflare Workers Logs
+ * ingests that JSON with field extraction. The same build runs under vitest,
+ * so tests exercise the production code path.
  *
- * Output is JSON to stdout via console.*, which Cloudflare automatically ingests
- * with field extraction and filtering support.
+ * Call convention is pino's: `log.info({ userId }, "signed in")` — object
+ * first, message second. Error objects passed under the `err` key are
+ * serialized with message/stack/name via pino's standard serializers.
  */
+/// <reference path="./pino-browser.d.ts" />
+import pinoFactory from "pino/browser.js";
 
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 
-const LEVELS: Record<LogLevel, number> = {
-  trace: 10,
-  debug: 20,
-  info: 30,
-  warn: 40,
-  error: 50,
-  fatal: 60,
-};
-
 export interface LogFn {
-  (msg: string, extra?: Record<string, unknown>): void;
-  (extra: Record<string, unknown>, msg: string): void;
+  (obj: Record<string, unknown> | Error, msg?: string, ...args: unknown[]): void;
+  (msg: string, ...args: unknown[]): void;
 }
 
 export interface Logger {
-  level: LogLevel;
+  level: string;
   trace: LogFn;
   debug: LogFn;
   info: LogFn;
@@ -40,63 +35,55 @@ export interface Logger {
 export interface LoggerOptions {
   level?: LogLevel;
   bindings?: Record<string, unknown>;
+  /**
+   * Observe each structured log entry in addition to console output — e.g.
+   * the job runner buffers a run's logs into its job_runs row.
+   */
+  onEntry?: (entry: Record<string, unknown>) => void;
 }
 
-function createLogFn(
-  level: LogLevel,
-  minLevel: LogLevel,
-  bindings: Record<string, unknown>,
-): LogFn {
-  const levelValue = LEVELS[level];
-  const minLevelValue = LEVELS[minLevel];
-
-  return (...args: [unknown, unknown?]) => {
-    if (levelValue < minLevelValue) return;
-
-    let msg: string;
-    let extra: Record<string, unknown> | undefined;
-
-    if (typeof args[0] === "string") {
-      msg = args[0];
-      extra = args[1] as Record<string, unknown> | undefined;
-    } else {
-      extra = args[0] as Record<string, unknown>;
-      msg = args[1] as string;
-    }
-
-    const entry = {
-      level: levelValue,
-      time: Date.now(),
-      msg,
-      ...bindings,
-      ...extra,
-    };
-
-    const method = level === "fatal" ? "error" : level === "trace" ? "debug" : level;
-    // eslint-disable-next-line no-console
-    console[method](JSON.stringify(entry));
-  };
-}
+const CONSOLE_METHOD: Record<number, "debug" | "info" | "warn" | "error"> = {
+  10: "debug",
+  20: "debug",
+  30: "info",
+  40: "warn",
+  50: "error",
+  60: "error",
+};
 
 export function createLogger(options: LoggerOptions = {}): Logger {
-  const level = options.level ?? "info";
-  const bindings = options.bindings ?? {};
-
-  return {
-    level,
-    trace: createLogFn("trace", level, bindings),
-    debug: createLogFn("debug", level, bindings),
-    info: createLogFn("info", level, bindings),
-    warn: createLogFn("warn", level, bindings),
-    error: createLogFn("error", level, bindings),
-    fatal: createLogFn("fatal", level, bindings),
-    child(childBindings: Record<string, unknown>) {
-      return createLogger({
-        level,
-        bindings: { ...bindings, ...childBindings },
-      });
+  const root = pinoFactory({
+    level: options.level ?? "info",
+    // Error values (under `err` or as the first argument) become plain
+    // {type, msg, stack} objects — Error properties are non-enumerable and
+    // would otherwise JSON.stringify to `{}`.
+    serializers: { err: pinoFactory.stdSerializers.err },
+    browser: {
+      asObject: true,
+      serialize: true,
+      write: (o: object) => {
+        const entry = o as Record<string, unknown> & { level?: number };
+        options.onEntry?.(entry);
+        const method = CONSOLE_METHOD[entry.level ?? 30] ?? "info";
+        let line: string;
+        try {
+          line = JSON.stringify(entry);
+        } catch {
+          // Circular structure — a diagnostic log call must never crash the
+          // request it observes.
+          line = JSON.stringify({
+            level: entry.level,
+            time: entry.time,
+            msg: String(entry.msg),
+            logError: "unserializable log entry",
+          });
+        }
+        console[method](line);
+      },
     },
-  };
+  });
+  const logger = options.bindings ? root.child(options.bindings) : root;
+  return logger as unknown as Logger;
 }
 
 /** Default logger instance */
