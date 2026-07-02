@@ -18,9 +18,12 @@ export const healthCheck: JobDefinition = {
     } catch (e) {
       checks.d1 = "error";
       healthy = false;
-      ctx.log.error("D1 health check failed", {
-        error: e instanceof Error ? e.message : String(e),
-      });
+      ctx.log.error(
+        {
+          error: e instanceof Error ? e.message : String(e),
+        },
+        "D1 health check failed",
+      );
     }
 
     // Check R2
@@ -30,9 +33,12 @@ export const healthCheck: JobDefinition = {
     } catch (e) {
       checks.r2 = "error";
       healthy = false;
-      ctx.log.error("R2 health check failed", {
-        error: e instanceof Error ? e.message : String(e),
-      });
+      ctx.log.error(
+        {
+          error: e instanceof Error ? e.message : String(e),
+        },
+        "R2 health check failed",
+      );
     }
 
     // User count
@@ -43,12 +49,15 @@ export const healthCheck: JobDefinition = {
       checks.userCount = userCount;
     } catch (e) {
       checks.userCount = "error";
-      ctx.log.error("User count check failed", {
-        error: e instanceof Error ? e.message : String(e),
-      });
+      ctx.log.error(
+        {
+          error: e instanceof Error ? e.message : String(e),
+        },
+        "User count check failed",
+      );
     }
 
-    ctx.log.info("Health check complete", { healthy, checks });
+    ctx.log.info({ healthy, checks }, "Health check complete");
 
     return {
       result: { healthy, checks },

@@ -25,6 +25,8 @@ describe("db-cleanup job", () => {
     mockReturning.mockResolvedValueOnce([{ id: "s1" }, { id: "s2" }]);
     // Second call: verifications delete
     mockReturning.mockResolvedValueOnce([{ id: "v1" }]);
+    // Third call: job-run history prune
+    mockReturning.mockResolvedValueOnce([{ id: 1 }, { id: 2 }, { id: 3 }]);
 
     const mockWhere = vi.fn().mockReturnValue({ returning: mockReturning });
     const mockDelete = vi.fn().mockReturnValue({ where: mockWhere });
@@ -36,16 +38,18 @@ describe("db-cleanup job", () => {
 
     expect(result.expiredSessions).toBe(2);
     expect(result.expiredVerifications).toBe(1);
+    expect(result.prunedJobRuns).toBe(3);
     expect(metrics.sessionsDeleted).toBe(2);
     expect(metrics.verificationsDeleted).toBe(1);
+    expect(metrics.jobRunsPruned).toBe(3);
   });
 
   it("logs cleanup progress", async () => {
     const ctx = createMockContext();
     await dbCleanup.handler(ctx);
 
-    expect(ctx.log.info).toHaveBeenCalledWith("Starting cleanup", expect.any(Object));
-    expect(ctx.log.info).toHaveBeenCalledWith("Deleted expired sessions", { count: 0 });
-    expect(ctx.log.info).toHaveBeenCalledWith("Deleted expired verifications", { count: 0 });
+    expect(ctx.log.info).toHaveBeenCalledWith(expect.any(Object), "Starting cleanup");
+    expect(ctx.log.info).toHaveBeenCalledWith({ count: 0 }, "Deleted expired sessions");
+    expect(ctx.log.info).toHaveBeenCalledWith({ count: 0 }, "Deleted expired verifications");
   });
 });

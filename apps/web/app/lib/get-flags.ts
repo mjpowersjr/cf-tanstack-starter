@@ -1,3 +1,4 @@
+import { tracingMiddleware } from "@repo/observability/middleware";
 import { createServerFn } from "@tanstack/react-start";
 
 /**
@@ -8,8 +9,10 @@ import { createServerFn } from "@tanstack/react-start";
  * Flag names are visible to all clients — don't use this for secrets. Gate
  * sensitive logic by checking flags inside server-only code instead.
  */
-export const getFlags = createServerFn({ method: "GET" }).handler(async () => {
-  const { env } = await import("cloudflare:workers");
-  const { getEnabledFlags } = await import("~/lib/feature-flags");
-  return getEnabledFlags(env.FLAGS);
-});
+export const getFlags = createServerFn({ method: "GET" })
+  .middleware([tracingMiddleware])
+  .handler(async () => {
+    const { env } = await import("cloudflare:workers");
+    const { getEnabledFlags } = await import("~/lib/feature-flags");
+    return getEnabledFlags(env.FLAGS);
+  });

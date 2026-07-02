@@ -1,3 +1,6 @@
+// Server-only: operates on the FLAGS KV binding.
+import "@tanstack/react-start/server-only";
+
 /**
  * KV-backed feature flags.
  *
@@ -15,7 +18,10 @@ export async function getFlag(kv: KVNamespace, flag: string): Promise<boolean> {
 }
 
 export async function setFlag(kv: KVNamespace, flag: string, enabled: boolean): Promise<void> {
-  await kv.put(`flag:${flag}`, enabled ? "true" : "false");
+  // The enabled state is duplicated into key metadata so listFlags() can read
+  // every flag from a single kv.list() call — this runs on EVERY request via
+  // the root beforeLoad, so per-key gets would be an N+1 on the hottest path.
+  await kv.put(`flag:${flag}`, enabled ? "true" : "false", { metadata: { enabled } });
 }
 
 export async function deleteFlag(kv: KVNamespace, flag: string): Promise<void> {
@@ -23,16 +29,18 @@ export async function deleteFlag(kv: KVNamespace, flag: string): Promise<void> {
 }
 
 export async function listFlags(kv: KVNamespace): Promise<{ name: string; enabled: boolean }[]> {
-  const list = await kv.list({ prefix: "flag:" });
-  const flags: { name: string; enabled: boolean }[] = [];
-  for (const key of list.keys) {
-    const value = await kv.get(key.name);
-    flags.push({
-      name: key.name.replace("flag:", ""),
-      enabled: value === "true",
-    });
-  }
-  return flags;
+  const list = await kv.list<{ enabled?: boolean }>({ prefix: "flag:" });
+  return Promise.all(
+    list.keys.map(async (key) => {
+      const name = key.name.slice("flag:".length);
+      if (typeof key.metadata?.enabled === "boolean") {
+        return { name, enabled: key.metadata.enabled };
+      }
+      // Legacy entry written before metadata existed — fall back to the value
+      // (fetched in parallel, and self-heals on the next setFlag).
+      return { name, enabled: (await kv.get(key.name)) === "true" };
+    }),
+  );
 }
 
 /**

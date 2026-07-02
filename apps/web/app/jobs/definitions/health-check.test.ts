@@ -29,7 +29,7 @@ describe("health-check job", () => {
     expect(result.healthy).toBe(false);
     expect((result.checks as Record<string, unknown>).d1).toBe("error");
     expect(metrics.healthy).toBe(0);
-    expect(ctx.log.error).toHaveBeenCalledWith("D1 health check failed", expect.any(Object));
+    expect(ctx.log.error).toHaveBeenCalledWith(expect.any(Object), "D1 health check failed");
   });
 
   it("returns unhealthy when R2 fails", async () => {
@@ -40,7 +40,7 @@ describe("health-check job", () => {
 
     expect(result.healthy).toBe(false);
     expect((result.checks as Record<string, unknown>).r2).toBe("error");
-    expect(ctx.log.error).toHaveBeenCalledWith("R2 health check failed", expect.any(Object));
+    expect(ctx.log.error).toHaveBeenCalledWith(expect.any(Object), "R2 health check failed");
   });
 
   it("reports user count", async () => {
