@@ -94,11 +94,13 @@ describe("getClientIp", () => {
     expect(getClientIp(req)).toBe("1.2.3.4");
   });
 
-  it("falls back to x-forwarded-for", () => {
+  it("ignores client-controlled forwarding headers", () => {
+    // x-forwarded-for is spoofable — an attacker could choose their own
+    // rate-limit bucket. Only cf-connecting-ip is trusted.
     const req = new Request("http://test.com", {
       headers: { "x-forwarded-for": "5.6.7.8, 9.10.11.12" },
     });
-    expect(getClientIp(req)).toBe("5.6.7.8");
+    expect(getClientIp(req)).toBe("unknown");
   });
 
   it("returns unknown when no headers", () => {

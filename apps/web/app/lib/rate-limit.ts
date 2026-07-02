@@ -54,7 +54,7 @@ export async function checkRateLimit(
   });
 
   if (!allowed) {
-    log.warn("Rate limit exceeded", { key, count, limit, windowSecs });
+    log.warn({ key, count, limit, windowSecs }, "Rate limit exceeded");
   }
 
   return { allowed, remaining: Math.max(0, limit - count), resetAt };
@@ -75,12 +75,11 @@ export function rateLimitResponse(resetAt: number): Response {
 
 /**
  * Extract a client identifier from a Request for rate limiting.
- * Uses CF-Connecting-IP (set by Cloudflare) with a fallback.
+ *
+ * Only CF-Connecting-IP is trusted — Cloudflare always sets it in production,
+ * and headers like x-forwarded-for are client-controlled (an attacker could
+ * pick their own bucket). Its absence (local dev) maps to a shared bucket.
  */
 export function getClientIp(request: Request): string {
-  return (
-    request.headers.get("cf-connecting-ip") ||
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    "unknown"
-  );
+  return request.headers.get("cf-connecting-ip") || "unknown";
 }

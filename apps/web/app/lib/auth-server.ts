@@ -1,3 +1,7 @@
+// Server-only: better-auth config with DB + secrets. The marker makes any
+// accidental client import a build error with a full import trace.
+import "@tanstack/react-start/server-only";
+
 import * as schema from "@repo/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
@@ -6,7 +10,20 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { drizzle } from "drizzle-orm/d1";
 
 export function createAuth(env: Cloudflare.Env) {
+  if (!env.BETTER_AUTH_SECRET) {
+    // Without a secret better-auth can fall back to a publicly-known default,
+    // making every session token forgeable. Fail hard instead.
+    throw new Error(
+      "BETTER_AUTH_SECRET is not set — run `wrangler secret put BETTER_AUTH_SECRET` (or add it to apps/web/.dev.vars for local dev).",
+    );
+  }
+
   const db = drizzle(env.DB, { schema });
+
+  const adminEmails = (env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
 
   return betterAuth({
     database: drizzleAdapter(db, { provider: "sqlite" }),
@@ -42,27 +59,24 @@ export function createAuth(env: Cloudflare.Env) {
     databaseHooks: {
       user: {
         create: {
-          before: async (user) => {
-            // Block signup if disabled (unless first user)
-            if (env.SIGNUP_ENABLED === "false") {
-              const { count } = await import("drizzle-orm");
-              const result = await db.select({ c: count() }).from(schema.user);
-              if (result[0].c > 0) {
-                throw new Error("Signup is currently disabled");
-              }
+          before: async (user, ctx) => {
+            const isAdminEmail = adminEmails.includes((user.email ?? "").toLowerCase());
+            // SIGNUP_ENABLED only gates self-service signup — admin-created
+            // users (/admin/create-user) and ADMIN_EMAILS bootstrap accounts
+            // are exempt, so operators can disable public registration
+            // without locking themselves out.
+            const isSelfSignup = ctx?.path?.startsWith("/sign-up") ?? false;
+            if (isSelfSignup && env.SIGNUP_ENABLED === "false" && !isAdminEmail) {
+              throw new Error("Signup is currently disabled");
+            }
+            // Accounts listed in ADMIN_EMAILS are promoted at creation. This
+            // replaces "first registrant becomes admin", which handed the
+            // site to whoever found a fresh deployment first (and raced under
+            // concurrent signups).
+            if (isAdminEmail) {
+              return { data: { ...user, role: "admin" } };
             }
             return { data: user };
-          },
-          after: async (user) => {
-            // First user becomes admin
-            const { count, eq } = await import("drizzle-orm");
-            const result = await db.select({ c: count() }).from(schema.user);
-            if (result[0].c === 1) {
-              await db
-                .update(schema.user)
-                .set({ role: "admin" })
-                .where(eq(schema.user.id, user.id));
-            }
           },
         },
       },

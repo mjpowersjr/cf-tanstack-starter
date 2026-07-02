@@ -10,9 +10,14 @@
 BETTER_AUTH_SECRET=changeme-generate-a-random-secret
 BETTER_AUTH_URL=http://localhost:5173
 
-# Registration toggle — set to "false" to disable public signup
-# The first user to register always becomes admin regardless of this setting.
+# Registration toggle — set to "false" to disable public signup.
+# Accounts with emails listed in ADMIN_EMAILS can always register.
 SIGNUP_ENABLED=true
+
+# Comma-separated emails auto-promoted to admin at account creation.
+# This is the only admin bootstrap path (besides `pnpm db:seed` locally) —
+# set it before registering, or use the seeded admin/password account.
+ADMIN_EMAILS=admin@example.com
 
 # Email (Resend) — OPTIONAL
 # Required for password reset emails. Without this, reset links are logged to console.

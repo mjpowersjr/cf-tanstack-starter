@@ -4,13 +4,13 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/api/files/download/$id")({
   server: {
     handlers: {
-      GET: async ({ params }) => {
+      GET: async ({ params, request }) => {
         const { env } = await import("cloudflare:workers");
         const { createDb, uploadedFiles } = await import("@repo/db");
         const { eq } = await import("drizzle-orm");
 
         const id = Number(params.id);
-        if (!id || Number.isNaN(id)) {
+        if (!Number.isInteger(id) || id < 1) {
           return new Response("Invalid file ID", { status: 400 });
         }
 
@@ -30,6 +30,10 @@ export const Route = createFileRoute("/api/files/download/$id")({
           return new Response("File not found in storage", { status: 404 });
         }
 
+        if (request.headers.get("if-none-match") === object.httpEtag) {
+          return new Response(null, { status: 304, headers: { ETag: object.httpEtag } });
+        }
+
         // Force download for types that could execute scripts (SVG, HTML, XML)
         const INLINE_SAFE_TYPES = [
           "image/jpeg",
@@ -47,7 +51,9 @@ export const Route = createFileRoute("/api/files/download/$id")({
           headers: {
             "Content-Type": file.contentType,
             "Content-Disposition": `${disposition}; filename="${safeFilename}"`,
-            "Content-Length": String(file.size),
+            // Size from the object, not the DB row — they can disagree.
+            "Content-Length": String(object.size),
+            ETag: object.httpEtag,
             "Cache-Control": "private, max-age=3600",
           },
         });
