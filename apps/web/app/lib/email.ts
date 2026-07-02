@@ -1,3 +1,6 @@
+// Server-only: talks to the email provider with API keys.
+import "@tanstack/react-start/server-only";
+
 /**
  * Email sending abstraction.
  *
