@@ -9,7 +9,7 @@ on:
         type: string
 
 env:
-  PNPM_VERSION: "10.6.3"
+  PNPM_VERSION: "10.33.4"
   NODE_VERSION: "22"
 
 permissions:
@@ -21,13 +21,13 @@ jobs:
     name: Update shadcn components
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -35,9 +35,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Run update
+        # Expand via env var, not ${{ }} interpolation, to avoid script injection.
+        env:
+          COMPONENTS: ${{ inputs.components }}
         run: |
-          if [ -n "${{ inputs.components }}" ]; then
-            pnpm shadcn:update ${{ inputs.components }}
+          if [ -n "$COMPONENTS" ]; then
+            # Intentional word-splitting: space-separated component list
+            pnpm shadcn:update $COMPONENTS
           else
             pnpm shadcn:update --all
           fi

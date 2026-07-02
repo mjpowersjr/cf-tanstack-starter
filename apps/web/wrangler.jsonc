@@ -10,6 +10,7 @@
   // Configure OTLP export destinations in the CF dashboard
   "observability": {
     "enabled": true,
+    // 100% sampling is right for a starter; lower this at scale to control cost
     "head_sampling_rate": 1,
     "logs": {
       "invocation_logs": true
@@ -48,13 +49,38 @@
 
   "vars": {
     "BETTER_AUTH_URL": "https://cf-tanstack-starter.mjpowersjr.workers.dev",
-    "SIGNUP_ENABLED": "true"
+    "SIGNUP_ENABLED": "true",
+    // Accounts created with these emails are auto-promoted to admin.
+    // Set this BEFORE first deploy — there is no other bootstrap path in prod
+    // (the old "first registrant becomes admin" behavior was removed as unsafe).
+    "ADMIN_EMAILS": "mjpowersjr@gmail.com"
   },
 
-  // Staging environment — deployed from `staging` branch
+  // Staging environment — deployed from `staging` branch.
+  //
+  // The *_STAGING_ID values are placeholders: pushing to `staging` will fail
+  // until you create the resources and paste the real IDs here:
+  //   wrangler d1 create cf-tanstack-starter-db-staging
+  //   wrangler kv namespace create RATE_LIMIT --env staging
+  //   wrangler kv namespace create FLAGS --env staging
+  //   wrangler r2 bucket create cf-tanstack-starter-bucket-staging
+  //   wrangler secret put BETTER_AUTH_SECRET --env staging
+  //
+  // Wrangler env inheritance is per-key: top-level `observability` and
+  // `triggers` do NOT apply to named envs, so they are re-declared here.
   "env": {
     "staging": {
       "name": "cf-tanstack-starter-staging",
+      "observability": {
+        "enabled": true,
+        "head_sampling_rate": 1,
+        "logs": {
+          "invocation_logs": true
+        }
+      },
+      "triggers": {
+        "crons": ["0 * * * *", "*/15 * * * *"]
+      },
       "d1_databases": [
         {
           "binding": "DB",
@@ -79,8 +105,10 @@
         }
       ],
       "vars": {
-        "BETTER_AUTH_URL": "https://cf-tanstack-starter-staging.workers.dev",
-        "SIGNUP_ENABLED": "true"
+        // workers.dev URLs include your account subdomain — check `wrangler whoami`
+        "BETTER_AUTH_URL": "https://cf-tanstack-starter-staging.mjpowersjr.workers.dev",
+        "SIGNUP_ENABLED": "true",
+        "ADMIN_EMAILS": "mjpowersjr@gmail.com"
       }
     }
   }
