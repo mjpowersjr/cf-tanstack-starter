@@ -31,6 +31,8 @@ export function AdminUserMenu({ user }: AdminUserMenuProps) {
 
   const handleLogout = async () => {
     await authClient.signOut();
+    // Refresh root context so the session-derived UI updates without a reload.
+    await router.invalidate();
     router.navigate({ to: "/" });
   };
 

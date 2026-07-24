@@ -1,31 +1,52 @@
 import { tracingMiddleware } from "@repo/observability/middleware";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { Briefcase, FileText, MessageSquare, Shield, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import * as v from "valibot";
+import { useConfirm } from "~/components/confirm-dialog";
 import { LoadingSkeleton } from "~/components/loading";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "~/components/ui/table";
 import { adminMiddleware } from "~/lib/admin-middleware";
-import { authClient } from "~/lib/auth";
 import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
 
-const getSignupStatus = createServerFn({ method: "GET" })
+const getOverview = createServerFn({ method: "GET" })
   .middleware([adminMiddleware, tracingMiddleware])
   .handler(async () => {
     const { env } = await import("cloudflare:workers");
-    return env.SIGNUP_ENABLED !== "false";
+    const { createDb, guestbookEntries, jobRuns, session, uploadedFiles, user } = await import(
+      "@repo/db"
+    );
+    const { sql } = await import("drizzle-orm");
+    const db = createDb(env.DB);
+
+    // Per-table so one failing count doesn't blank the whole dashboard.
+    const tables = {
+      users: user,
+      sessions: session,
+      files: uploadedFiles,
+      guestbook: guestbookEntries,
+      jobRuns: jobRuns,
+    } as const;
+    const entries = await Promise.all(
+      Object.entries(tables).map(async ([name, table]) => {
+        try {
+          const [row] = await db.select({ count: sql<number>`count(*)` }).from(table);
+          return [name, row?.count ?? 0] as const;
+        } catch {
+          return [name, null] as const;
+        }
+      }),
+    );
+
+    return {
+      signupEnabled: env.SIGNUP_ENABLED !== "false",
+      counts: Object.fromEntries(entries) as Record<string, number | null>,
+    };
   });
 
 const getFeatureFlags = createServerFn({ method: "GET" })
@@ -85,280 +106,59 @@ export const Route = createFileRoute("/admin/")({
   head: () => ({
     meta: [
       { title: "Admin | CF TanStack Starter" },
-      { name: "description", content: "Admin dashboard for user management." },
+      { name: "description", content: "Admin dashboard overview." },
       { property: "og:title", content: "Admin | CF TanStack Starter" },
-      { property: "og:description", content: "Admin dashboard for user management." },
+      { property: "og:description", content: "Admin dashboard overview." },
     ],
   }),
-  loader: () => getSignupStatus(),
+  loader: () => getOverview(),
   component: AdminPage,
   pendingComponent: LoadingSkeleton,
 });
 
+const STAT_CARDS = [
+  { key: "users", label: "Users", icon: Users, href: "/admin/users" },
+  { key: "sessions", label: "Sessions", icon: Shield, href: "/admin/sessions" },
+  { key: "files", label: "Files", icon: FileText, href: "/admin/files" },
+  { key: "guestbook", label: "Guestbook", icon: MessageSquare, href: "/admin/guestbook" },
+  { key: "jobRuns", label: "Job Runs", icon: Briefcase, href: "/admin/jobs" },
+] as const;
+
 function AdminPage() {
-  const signupEnabled = Route.useLoaderData();
+  const { signupEnabled, counts } = Route.useLoaderData();
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Manage users and site settings.</p>
+        <p className="text-muted-foreground">An overview of your site. Jump into any area below.</p>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <UserList />
-        </div>
-        <div className="space-y-6">
-          <CreateUserForm />
-          <SignupStatusCard enabled={signupEnabled} />
-          <FeatureFlagsCard />
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {STAT_CARDS.map(({ key, label, icon: Icon, href }) => (
+          <Link key={key} to={href}>
+            <Card className="transition-colors hover:bg-accent">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {counts[key] === null || counts[key] === undefined
+                    ? "—"
+                    : counts[key]?.toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        <FeatureFlagsCard />
+        <SignupStatusCard enabled={signupEnabled} />
       </div>
     </div>
-  );
-}
-
-function UserList() {
-  const [users, setUsers] = useState<
-    {
-      id: string;
-      name: string;
-      email: string;
-      username: string | null;
-      role: string | null;
-      banned: boolean | null;
-      createdAt: string;
-    }[]
-  >([]);
-  const [loaded, setLoaded] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const result = await authClient.admin.listUsers({ query: { limit: 100 } });
-      if (result.error) {
-        throw new Error(result.error.message);
-      }
-      setUsers(
-        (result.data?.users ?? []).map((u) => ({
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          username: (u as unknown as Record<string, unknown>).username as string | null,
-          role: u.role as string | null,
-          banned: u.banned as boolean | null,
-          createdAt: new Date(u.createdAt).toLocaleDateString(),
-        })),
-      );
-      setLoaded(true);
-    } catch {
-      toast.error("Failed to load users");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // better-auth returns failures in result.error rather than throwing — an
-  // unchecked call makes failed role changes/bans look like silent no-ops.
-  const runAdminAction = async (label: string, action: () => Promise<{ error: unknown }>) => {
-    try {
-      const result = await action();
-      if (result.error) {
-        throw new Error(String((result.error as { message?: string })?.message ?? label));
-      }
-      toast.success(label);
-      await fetchUsers();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : `Failed: ${label}`);
-    }
-  };
-
-  const handleSetRole = (userId: string, role: "admin" | "user") =>
-    runAdminAction(`Role set to ${role}`, () => authClient.admin.setRole({ userId, role }));
-
-  const handleToggleBan = (userId: string, banned: boolean) =>
-    banned
-      ? runAdminAction("User unbanned", () => authClient.admin.unbanUser({ userId }))
-      : runAdminAction("User banned", () => authClient.admin.banUser({ userId }));
-
-  const handleDelete = (userId: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
-    return runAdminAction("User deleted", () => authClient.admin.removeUser({ userId }));
-  };
-
-  if (!loaded) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Users</CardTitle>
-          <CardDescription>Manage user accounts.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={fetchUsers} disabled={loading}>
-            {loading ? "Loading..." : "Load Users"}
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Users</CardTitle>
-            <CardDescription>{users.length} total users</CardDescription>
-          </div>
-          <Button variant="outline" size="sm" onClick={fetchUsers}>
-            Refresh
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Username</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.username ?? user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                    {user.role ?? "user"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {user.banned ? (
-                    <Badge variant="destructive">Banned</Badge>
-                  ) : (
-                    <Badge variant="outline">Active</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        handleSetRole(user.id, user.role === "admin" ? "user" : "admin")
-                      }
-                    >
-                      {user.role === "admin" ? "Demote" : "Promote"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleToggleBan(user.id, !!user.banned)}
-                    >
-                      {user.banned ? "Unban" : "Ban"}
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => handleDelete(user.id)}>
-                      Delete
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-}
-
-function CreateUserForm() {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"user" | "admin">("user");
-  const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage("");
-    setSubmitting(true);
-
-    try {
-      const result = await authClient.admin.createUser({
-        name: username,
-        email,
-        password,
-        role,
-        data: { username, displayUsername: username },
-      });
-
-      if (result.error) {
-        setMessage(result.error.message ?? "Failed to create user");
-      } else {
-        setMessage("User created successfully");
-        setUsername("");
-        setEmail("");
-        setPassword("");
-        setRole("user");
-      }
-    } catch {
-      setMessage("Failed to create user");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create User</CardTitle>
-        <CardDescription>Add a new user account.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {message && <div className="rounded-md border p-3 text-sm">{message}</div>}
-          <Input
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
-          <Input
-            placeholder="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            placeholder="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-          />
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as "user" | "admin")}
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-          >
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-          </select>
-          <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? "Creating..." : "Create User"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -375,6 +175,7 @@ function SignupStatusCard({ enabled }: { enabled: boolean }) {
       <CardContent>
         <p className="text-sm text-muted-foreground">
           Toggle via the <code className="text-xs">SIGNUP_ENABLED</code> environment variable.
+          Admin-created users and <code className="text-xs">ADMIN_EMAILS</code> accounts are exempt.
         </p>
       </CardContent>
     </Card>
@@ -386,6 +187,7 @@ function FeatureFlagsCard() {
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [newFlagName, setNewFlagName] = useState("");
+  const { confirm, dialog } = useConfirm();
 
   const fetchFlags = async () => {
     setLoading(true);
@@ -425,7 +227,13 @@ function FeatureFlagsCard() {
   };
 
   const handleDelete = async (name: string) => {
-    if (!confirm(`Delete flag "${name}"?`)) return;
+    const ok = await confirm({
+      title: `Delete flag "${name}"?`,
+      description: "Any code reading this flag will fall back to disabled.",
+      confirmLabel: "Delete flag",
+      variant: "destructive",
+    });
+    if (!ok) return;
     try {
       await deleteFeatureFlag({ data: { name } });
       toast.success(`Flag "${name}" deleted`);
@@ -505,6 +313,7 @@ function FeatureFlagsCard() {
           </div>
         )}
       </CardContent>
+      {dialog}
     </Card>
   );
 }

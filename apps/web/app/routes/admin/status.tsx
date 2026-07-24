@@ -8,6 +8,7 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { adminMiddleware } from "~/lib/admin-middleware";
+import { formatDate } from "~/lib/format";
 
 // --- Server Functions ---
 
@@ -137,9 +138,7 @@ function StatusPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">System Status</h1>
-          <p className="text-muted-foreground">
-            Last checked: {new Date(data.timestamp).toLocaleString()}
-          </p>
+          <p className="text-muted-foreground">Last checked: {formatDate(data.timestamp)}</p>
         </div>
         <div className="flex items-center gap-3">
           <Badge variant={allHealthy ? "default" : "destructive"}>

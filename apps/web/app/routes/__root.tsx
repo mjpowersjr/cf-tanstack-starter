@@ -69,6 +69,8 @@ function RootComponent() {
 
   const handleLogout = async () => {
     await authClient.signOut();
+    // Refresh root context so the header reflects the signed-out state.
+    await router.invalidate();
     router.navigate({ to: "/" });
   };
 

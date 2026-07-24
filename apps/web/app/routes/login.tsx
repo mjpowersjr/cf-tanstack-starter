@@ -40,6 +40,8 @@ function LoginPage() {
       return;
     }
 
+    // Refresh root context so the new session is reflected before navigating.
+    await router.invalidate();
     router.navigate({ to: "/" });
   };
 

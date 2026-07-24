@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useConfirm } from "~/components/confirm-dialog";
 import { LoadingSkeleton } from "~/components/loading";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -15,7 +16,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { authClient } from "~/lib/auth";
-import { formatUserAgent } from "~/lib/format";
+import { formatDate, formatUserAgent } from "~/lib/format";
 
 // --- Route ---
 
@@ -78,6 +79,7 @@ function UserSessionLookup({ currentSessionToken }: { currentSessionToken: strin
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const { confirm, dialog } = useConfirm();
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -128,7 +130,13 @@ function UserSessionLookup({ currentSessionToken }: { currentSessionToken: strin
   };
 
   const handleRevokeAll = async (userId: string) => {
-    if (!confirm("Revoke all sessions for this user? They will be logged out everywhere.")) return;
+    const ok = await confirm({
+      title: "Revoke all sessions?",
+      description: "This user will be signed out everywhere immediately.",
+      confirmLabel: "Revoke all",
+      variant: "destructive",
+    });
+    if (!ok) return;
     try {
       await authClient.admin.revokeUserSessions({ userId });
       toast.success("All sessions revoked");
@@ -168,118 +176,117 @@ function UserSessionLookup({ currentSessionToken }: { currentSessionToken: strin
   const parseUserAgent = (ua: string | null) => formatUserAgent(ua, 60);
 
   return (
-    <div className="grid gap-8 lg:grid-cols-3">
-      <Card>
-        <CardHeader>
-          <CardTitle>Users</CardTitle>
-          <CardDescription>{users.length} registered users</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Input
-            placeholder="Search users..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <div className="max-h-96 space-y-1 overflow-auto">
-            {filteredUsers.map((user) => (
-              <button
-                key={user.id}
-                type="button"
-                onClick={() => fetchSessionsForUser(user.id)}
-                className={`w-full rounded-md border p-2 text-left text-sm transition-colors hover:bg-accent ${
-                  selectedUserId === user.id ? "border-primary bg-accent" : ""
-                }`}
-              >
-                <div className="font-medium">{user.username ?? user.name}</div>
-                <div className="text-xs text-muted-foreground">{user.email}</div>
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>
-                {selectedUser
-                  ? `Sessions for ${selectedUser.username ?? selectedUser.name}`
-                  : "Sessions"}
-              </CardTitle>
-              <CardDescription>
-                {selectedUser
-                  ? `${sessions.length} active session(s)`
-                  : "Select a user to view sessions"}
-              </CardDescription>
+    <>
+      <div className="grid gap-8 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Users</CardTitle>
+            <CardDescription>{users.length} registered users</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Input
+              placeholder="Search users..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <div className="max-h-96 space-y-1 overflow-auto">
+              {filteredUsers.map((user) => (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => fetchSessionsForUser(user.id)}
+                  className={`w-full rounded-md border p-2 text-left text-sm transition-colors hover:bg-accent ${
+                    selectedUserId === user.id ? "border-primary bg-accent" : ""
+                  }`}
+                >
+                  <div className="font-medium">{user.username ?? user.name}</div>
+                  <div className="text-xs text-muted-foreground">{user.email}</div>
+                </button>
+              ))}
             </div>
-            {selectedUser && sessions.length > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => handleRevokeAll(selectedUser.id)}
-              >
-                Revoke All
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {!selectedUser ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">
-              Select a user from the list to view their sessions.
-            </p>
-          ) : sessionsLoading ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">Loading sessions...</p>
-          ) : sessions.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">No active sessions.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Device</TableHead>
-                  <TableHead>IP</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sessions.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell className="max-w-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">{parseUserAgent(s.userAgent)}</span>
-                        {s.token === currentSessionToken && <Badge variant="default">You</Badge>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{s.ipAddress ?? "\u2014"}</TableCell>
-                    <TableCell className="text-sm">
-                      {new Date(s.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {new Date(s.expiresAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {s.token === currentSessionToken ? (
-                        <span className="text-xs text-muted-foreground">Current</span>
-                      ) : (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleRevokeSession(s.token)}
-                        >
-                          Revoke
-                        </Button>
-                      )}
-                    </TableCell>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>
+                  {selectedUser
+                    ? `Sessions for ${selectedUser.username ?? selectedUser.name}`
+                    : "Sessions"}
+                </CardTitle>
+                <CardDescription>
+                  {selectedUser
+                    ? `${sessions.length} active session(s)`
+                    : "Select a user to view sessions"}
+                </CardDescription>
+              </div>
+              {selectedUser && sessions.length > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleRevokeAll(selectedUser.id)}
+                >
+                  Revoke All
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!selectedUser ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                Select a user from the list to view their sessions.
+              </p>
+            ) : sessionsLoading ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">Loading sessions...</p>
+            ) : sessions.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">No active sessions.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Device</TableHead>
+                    <TableHead>IP</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                </TableHeader>
+                <TableBody>
+                  {sessions.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell className="max-w-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{parseUserAgent(s.userAgent)}</span>
+                          {s.token === currentSessionToken && <Badge variant="default">You</Badge>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">{s.ipAddress ?? "\u2014"}</TableCell>
+                      <TableCell className="text-sm">{formatDate(s.createdAt)}</TableCell>
+                      <TableCell className="text-sm">{formatDate(s.expiresAt)}</TableCell>
+                      <TableCell className="text-right">
+                        {s.token === currentSessionToken ? (
+                          <span className="text-xs text-muted-foreground">Current</span>
+                        ) : (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleRevokeSession(s.token)}
+                          >
+                            Revoke
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      {dialog}
+    </>
   );
 }
