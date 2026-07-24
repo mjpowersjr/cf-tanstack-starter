@@ -30,6 +30,13 @@ export function createAuth(env: Cloudflare.Env) {
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: [env.BETTER_AUTH_URL],
+    user: {
+      // Let users delete their own account from settings. Credential users
+      // must re-enter their password (verified by better-auth); the session
+      // is destroyed on success. No email verification step is wired — add a
+      // `sendDeleteAccountVerification` callback here if you want one.
+      deleteUser: { enabled: true },
+    },
     emailAndPassword: {
       enabled: true,
       sendResetPassword: async ({ user, url }) => {
