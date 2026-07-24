@@ -43,7 +43,7 @@ const PaginationSchema = v.object({
 
 const getEntries = createServerFn({ method: "GET" })
   .middleware([adminMiddleware, tracingMiddleware])
-  .inputValidator(PaginationSchema)
+  .validator(PaginationSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
     const { createDb, guestbookEntries } = await import("@repo/db");
@@ -72,7 +72,7 @@ const createEntry = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "admin-create-entry", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(AddEntrySchema)
+  .validator(AddEntrySchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
     const { createDb, guestbookEntries } = await import("@repo/db");
@@ -87,7 +87,7 @@ const updateEntry = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "admin-update-entry", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(UpdateEntrySchema)
+  .validator(UpdateEntrySchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
     const { createDb, guestbookEntries } = await import("@repo/db");
@@ -106,7 +106,7 @@ const deleteEntry = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "admin-delete-entry", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(EntryIdSchema)
+  .validator(EntryIdSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
     const { createDb, guestbookEntries } = await import("@repo/db");

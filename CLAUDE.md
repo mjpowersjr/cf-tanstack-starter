@@ -30,7 +30,7 @@ the code alone, plus the CI gates that enforce them.
 // Admin endpoint (auth required):
 const myFn = createServerFn({ method: "POST" })
   .middleware([adminMiddleware, rateLimitMiddleware({ key: "my-fn", limit: 10, windowSecs: 60 }), tracingMiddleware])
-  .inputValidator(MySchema)
+  .validator(MySchema)
   .handler(async ({ data, context }) => {
     const userId = context.session.user.id;
   });
@@ -95,7 +95,7 @@ GET: async ({ request, params }) => {
 
 ## Validation
 
-- Valibot (not Zod) for all schemas; Standard Schema means no adapter for `.inputValidator()`
+- Valibot (not Zod) for all schemas; Standard Schema means no adapter for `.validator()`
 - Shared schemas live in `packages/db/src/validation.ts` (exports `ALLOWED_CONTENT_TYPES`, `MAX_FILE_SIZE` for client-side pre-checks)
 
 ## D1 Migrations

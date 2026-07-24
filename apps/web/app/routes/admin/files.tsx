@@ -29,7 +29,7 @@ const PAGE_SIZE = 20;
 
 const getFilesAdmin = createServerFn({ method: "GET" })
   .middleware([adminMiddleware, tracingMiddleware])
-  .inputValidator(v.object({ page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1) }))
+  .validator(v.object({ page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1) }))
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
     const { createDb, uploadedFiles } = await import("@repo/db");
@@ -56,7 +56,7 @@ const deleteFileAdmin = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "admin-delete-file", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(FileIdSchema)
+  .validator(FileIdSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
     const { createDb, uploadedFiles } = await import("@repo/db");
