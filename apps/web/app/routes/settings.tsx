@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { authClient } from "~/lib/auth";
+import { formatUserAgent } from "~/lib/format";
 import { getSession } from "~/lib/get-session";
 
 export const Route = createFileRoute("/settings")({
@@ -68,12 +69,18 @@ function SessionsCard({ currentSessionToken }: { currentSessionToken: string }) 
 
   const fetchSessions = async () => {
     setLoading(true);
-    const result = await authClient.listSessions();
-    if (result.data) {
-      setSessions(result.data as SessionInfo[]);
+    try {
+      const result = await authClient.listSessions();
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      setSessions((result.data ?? []) as SessionInfo[]);
+      setLoaded(true);
+    } catch {
+      toast.error("Failed to load sessions");
+    } finally {
+      setLoading(false);
     }
-    setLoaded(true);
-    setLoading(false);
   };
 
   const handleRevoke = async (token: string) => {
@@ -116,12 +123,6 @@ function SessionsCard({ currentSessionToken }: { currentSessionToken: string }) 
     );
   }
 
-  const parseUserAgent = (ua: string | null) => {
-    if (!ua) return "Unknown device";
-    if (ua.length > 80) return `${ua.slice(0, 80)}...`;
-    return ua;
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -158,7 +159,7 @@ function SessionsCard({ currentSessionToken }: { currentSessionToken: string }) 
               <TableRow key={s.id}>
                 <TableCell className="max-w-xs">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm">{parseUserAgent(s.userAgent)}</span>
+                    <span className="text-sm">{formatUserAgent(s.userAgent)}</span>
                     {s.token === currentSessionToken && <Badge variant="default">Current</Badge>}
                   </div>
                 </TableCell>

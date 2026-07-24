@@ -1,4 +1,4 @@
-import { useRouter } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { LogOut, Settings, User } from "lucide-react";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import {
@@ -51,16 +51,16 @@ export function AdminUserMenu({ user }: AdminUserMenuProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <a href="/settings">
+          <Link to="/settings">
             <Settings className="mr-2 h-4 w-4" />
             Settings
-          </a>
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <a href="/">
+          <Link to="/">
             <User className="mr-2 h-4 w-4" />
             Back to Site
-          </a>
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>

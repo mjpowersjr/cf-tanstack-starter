@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { adminMiddleware } from "~/lib/admin-middleware";
+import { formatDate } from "~/lib/format";
 import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
 
 // --- Types ---
@@ -33,8 +34,8 @@ interface JobRun {
   triggerCron: string | null;
   triggeredBy: string | null;
   status: string;
-  startedAt: string;
-  completedAt: string | null;
+  startedAt: Date;
+  completedAt: Date | null;
   durationMs: number | null;
   result: JsonColumn;
   metrics: JsonColumn;
@@ -103,7 +104,9 @@ const triggerJob = createServerFn({ method: "POST" })
     const { jobs } = await import("~/jobs/registry");
     const { executeJob } = await import("~/jobs/runner");
 
-    const job = jobs[data.jobName];
+    // Object.hasOwn: a plain index lookup resolves prototype-chain names
+    // like "constructor" to truthy garbage.
+    const job = Object.hasOwn(jobs, data.jobName) ? jobs[data.jobName] : undefined;
     if (!job) {
       throw new Error(`Unknown job: ${data.jobName}`);
     }
@@ -276,7 +279,7 @@ function JobRunRow({ run }: { run: JobRun }) {
           )}
         </TableCell>
         <TableCell>{run.durationMs != null ? `${run.durationMs}ms` : "\u2014"}</TableCell>
-        <TableCell className="text-sm">{run.startedAt}</TableCell>
+        <TableCell className="text-sm">{formatDate(run.startedAt)}</TableCell>
         <TableCell className="max-w-xs truncate text-xs text-muted-foreground">
           {result ? JSON.stringify(result) : "\u2014"}
         </TableCell>

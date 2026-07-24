@@ -17,16 +17,16 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "drizzle-orm": "npm:drizzle-orm@beta",
-    "valibot": "^1.3.1"
+    "drizzle-orm": "npm:drizzle-orm@1.0.0-beta.16-ea816b6",
+    "valibot": "^1.4.1"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "4.20260430.1",
-    "better-auth": "^1.5.4",
-    "drizzle-kit": "npm:drizzle-kit@beta",
-    "tsx": "^4.21.0",
-    "typescript": "5.9.3",
-    "vitest": "^3.2.1",
-    "wrangler": "4.86.0"
+    "@cloudflare/workers-types": "4.20260625.1",
+    "better-auth": "^1.6.20",
+    "drizzle-kit": "npm:drizzle-kit@1.0.0-beta.16-ea816b6",
+    "tsx": "^4.22.4",
+    "typescript": "6.0.3",
+    "vitest": "^4.1.9",
+    "wrangler": "4.104.0"
   }
 }

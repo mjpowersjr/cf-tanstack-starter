@@ -8,39 +8,52 @@ const log = createLogger({ bindings: { component: "server-fn" } });
  *
  * Emits structured JSON via console (captured as OTel logs by
  * Cloudflare Workers native observability). Logs start, duration,
- * and success/error status for every server function call.
+ * and success/error status for every server function call, tagged with the
+ * server function's name and source file so slow/failing functions are
+ * identifiable.
  *
  * Usage:
  *   const myFn = createServerFn({ method: 'GET' })
  *     .middleware([tracingMiddleware])
  *     .handler(async () => { ... })
  */
-export const tracingMiddleware = createMiddleware().server(async ({ next, context }) => {
-  const requestId = crypto.randomUUID();
-  const start = performance.now();
+export const tracingMiddleware = createMiddleware().server(
+  async ({ next, context, serverFnMeta }) => {
+    const requestId = crypto.randomUUID();
+    const fn = { fnName: serverFnMeta?.name ?? "unknown", fnFile: serverFnMeta?.filename };
+    const start = performance.now();
 
-  log.info("server_fn_start", { requestId });
+    log.info({ requestId, ...fn }, "server_fn_start");
 
-  try {
-    const ctx = (context ?? {}) as Record<string, unknown>;
-    const result = await next({
-      context: { ...ctx, requestId },
-    });
+    try {
+      const ctx = (context ?? {}) as Record<string, unknown>;
+      const result = await next({
+        context: { ...ctx, requestId },
+      });
 
-    log.info("server_fn_end", {
-      requestId,
-      duration_ms: Math.round((performance.now() - start) * 100) / 100,
-      status: "ok",
-    });
+      log.info(
+        {
+          requestId,
+          ...fn,
+          duration_ms: Math.round((performance.now() - start) * 100) / 100,
+          status: "ok",
+        },
+        "server_fn_end",
+      );
 
-    return result;
-  } catch (error) {
-    log.error("server_fn_end", {
-      requestId,
-      duration_ms: Math.round((performance.now() - start) * 100) / 100,
-      status: "error",
-      error: error instanceof Error ? error.message : String(error),
-    });
-    throw error;
-  }
-});
+      return result;
+    } catch (error) {
+      log.error(
+        {
+          requestId,
+          ...fn,
+          duration_ms: Math.round((performance.now() - start) * 100) / 100,
+          status: "error",
+          err: error instanceof Error ? error : new Error(String(error)),
+        },
+        "server_fn_end",
+      );
+      throw error;
+    }
+  },
+);

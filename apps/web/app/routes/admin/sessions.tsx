@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { authClient } from "~/lib/auth";
+import { formatUserAgent } from "~/lib/format";
 
 // --- Route ---
 
@@ -164,11 +165,7 @@ function UserSessionLookup({ currentSessionToken }: { currentSessionToken: strin
 
   const selectedUser = users.find((u) => u.id === selectedUserId);
 
-  const parseUserAgent = (ua: string | null) => {
-    if (!ua) return "Unknown device";
-    if (ua.length > 60) return `${ua.slice(0, 60)}...`;
-    return ua;
-  };
+  const parseUserAgent = (ua: string | null) => formatUserAgent(ua, 60);
 
   return (
     <div className="grid gap-8 lg:grid-cols-3">

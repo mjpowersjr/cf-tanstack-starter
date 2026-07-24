@@ -14,10 +14,13 @@
     "@opentelemetry/api": "^1.9.1",
     "@repo/logger": "workspace:*"
   },
+  "peerDependencies": {
+    "@tanstack/react-start": ">=1.167.0"
+  },
   "devDependencies": {
-    "@cloudflare/workers-types": "4.20260430.1",
-    "@tanstack/react-start": "1.167.52",
-    "typescript": "5.9.3",
-    "vitest": "^3.2.1"
+    "@cloudflare/workers-types": "4.20260625.1",
+    "@tanstack/react-start": "1.168.26",
+    "typescript": "6.0.3",
+    "vitest": "^4.1.9"
   }
 }

@@ -28,12 +28,12 @@
     "cf:secret:put": "pnpm --filter @repo/web cf:secret:put"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.13",
-    "lefthook": "^1.13.6",
-    "tsx": "^4.21.0",
-    "turbo": "2.9.6"
+    "@biomejs/biome": "^2.5.1",
+    "lefthook": "^2.1.9",
+    "tsx": "^4.22.4",
+    "turbo": "2.10.0"
   },
-  "packageManager": "pnpm@10.6.3",
+  "packageManager": "pnpm@10.33.4",
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild",
@@ -42,7 +42,7 @@
       "@tailwindcss/oxide"
     ],
     "overrides": {
-      "drizzle-orm": "npm:drizzle-orm@beta"
+      "drizzle-orm": "npm:drizzle-orm@1.0.0-beta.16-ea816b6"
     }
   }
 }

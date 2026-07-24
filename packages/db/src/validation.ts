@@ -16,10 +16,15 @@ export const AddEntrySchema = v.object({
 
 export type AddEntryInput = v.InferOutput<typeof AddEntrySchema>;
 
-/** Max file size: 5MB (base64 encodes ~33% larger, so limit base64 string accordingly) */
-const MAX_BASE64_LENGTH = Math.ceil((5 * 1024 * 1024 * 4) / 3);
+/** Max upload size in bytes. */
+export const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-const ALLOWED_CONTENT_TYPES = [
+/** Max file size: 5MB (base64 encodes ~33% larger, so limit base64 string accordingly) */
+const MAX_BASE64_LENGTH = Math.ceil((MAX_FILE_SIZE * 4) / 3);
+
+// SVG is allowed only because the download route forces `Content-Disposition:
+// attachment` for script-capable types — never serve these inline.
+export const ALLOWED_CONTENT_TYPES = [
   "image/jpeg",
   "image/png",
   "image/gif",
@@ -32,19 +37,26 @@ const ALLOWED_CONTENT_TYPES = [
 ] as const;
 
 export const UploadFileSchema = v.object({
-  filename: v.pipe(v.string(), v.minLength(1, "Filename is required"), v.maxLength(255)),
-  contentType: v.pipe(
+  filename: v.pipe(
     v.string(),
-    v.minLength(1),
-    v.check(
-      (val) => (ALLOWED_CONTENT_TYPES as readonly string[]).includes(val),
-      `Content type must be one of: ${ALLOWED_CONTENT_TYPES.join(", ")}`,
+    v.minLength(1, "Filename is required"),
+    v.maxLength(255),
+    v.regex(
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: rejecting control chars is the point
+      /^[^/\\\x00-\x1f]+$/,
+      "Filename must not contain path separators or control characters",
     ),
+    v.check((val) => val !== "." && val !== "..", "Invalid filename"),
+  ),
+  contentType: v.picklist(
+    ALLOWED_CONTENT_TYPES,
+    `Content type must be one of: ${ALLOWED_CONTENT_TYPES.join(", ")}`,
   ),
   base64: v.pipe(
     v.string(),
     v.minLength(1, "File content is required"),
     v.maxLength(MAX_BASE64_LENGTH, "File size must not exceed 5MB"),
+    v.base64("File content must be valid base64"),
   ),
 });
 

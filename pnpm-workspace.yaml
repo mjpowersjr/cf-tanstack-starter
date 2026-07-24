@@ -1,3 +1,8 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# Supply-chain mitigation: refuse to install package versions less than 7 days old.
+# 10080 minutes = 7 days. Requires pnpm >= 10.16.0.
+# Exemptions go under `minimumReleaseAgeExclude` (supports globs and version selectors).
+minimumReleaseAge: 10080

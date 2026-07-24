@@ -1,3 +1,6 @@
+// Server-only: session guards for raw HTTP handlers.
+import "@tanstack/react-start/server-only";
+
 /**
  * Auth guards for server.handlers routes (file-based API endpoints).
  *

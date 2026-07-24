@@ -22,7 +22,27 @@ export default defineConfig({
     tailwindcss(),
     tsconfigPaths({ projects: ["./tsconfig.json"] }),
     cloudflare({ viteEnvironment: { name: "ssr" } }),
-    tanstackStart({ srcDirectory: "app" }),
+    tanstackStart({
+      srcDirectory: "app",
+      // Build-time guarantee that server-only code can't leak into client
+      // bundles. Framework defaults (dev: mock, build: error) are listed
+      // explicitly so it's obvious where to tune them. Server-only app
+      // modules additionally carry `import "@tanstack/react-start/server-only"`
+      // markers (see lib/auth-server.ts etc.).
+      importProtection: {
+        behavior: { dev: "mock", build: "error" },
+        client: {
+          files: [
+            "**/*.server.*", // framework default
+            // D1-bound db factory and drizzle schema — server-side only.
+            // (Validation schemas via the @repo/db barrel stay client-safe.)
+            "**/packages/db/src/client.ts",
+            "**/packages/db/src/schema.ts",
+          ],
+          specifiers: [/^cloudflare:/],
+        },
+      },
+    }),
     viteReact(),
   ],
 });

@@ -1,0 +1,8 @@
+/* TEAM */
+Maintainer: Your Name
+Contact: you@your-domain.example
+From: Earth
+
+/* SITE */
+Stack: TanStack Start, Cloudflare Workers, D1, R2, Drizzle ORM, shadcn/ui
+Source: https://github.com/your-org/cf-tanstack-starter

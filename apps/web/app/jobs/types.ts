@@ -19,5 +19,7 @@ export interface JobDefinition {
   name: string;
   description: string;
   cron: string | null;
+  /** Wall-clock cap for one run; the run is recorded as "error" when exceeded. Default 5 minutes. */
+  timeoutMs?: number;
   handler: (ctx: JobContext) => Promise<JobResult>;
 }

@@ -1,4 +1,10 @@
-import { AddEntrySchema, FileIdSchema, UploadFileSchema } from "@repo/db";
+import {
+  AddEntrySchema,
+  ALLOWED_CONTENT_TYPES,
+  FileIdSchema,
+  MAX_FILE_SIZE,
+  UploadFileSchema,
+} from "@repo/db";
 import { tracingMiddleware } from "@repo/observability/middleware";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
@@ -21,10 +27,18 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { Textarea } from "~/components/ui/textarea";
-import { formatSize } from "~/lib/format";
+import { authMiddleware } from "~/lib/auth-middleware";
+import { formatDate, formatSize } from "~/lib/format";
 import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
 
 // --- Server Functions ---
+//
+// Security posture of this demo page:
+// - Guestbook write and file list/download are PUBLIC (that's the demo).
+// - File upload/delete require a signed-in user; deletes are scoped to the
+//   uploader (admins may delete anything).
+// If you build on this page, revisit whether the public pieces should stay
+// public in your app.
 
 const ENTRIES_PAGE_SIZE = 10;
 
@@ -49,6 +63,7 @@ const getEntries = createServerFn({ method: "GET" })
     return { entries, total: countResult[0]?.count ?? 0 };
   });
 
+// @public-fn — anonymous guestbook signing is the point of the demo; rate-limited per IP
 const addEntry = createServerFn({ method: "POST" })
   .middleware([
     rateLimitMiddleware({ key: "add-entry", limit: 30, windowSecs: 60 }),
@@ -78,38 +93,49 @@ const getFiles = createServerFn({ method: "GET" })
 
 const uploadFile = createServerFn({ method: "POST" })
   .middleware([
+    authMiddleware,
     rateLimitMiddleware({ key: "upload-file", limit: 10, windowSecs: 60 }),
     tracingMiddleware,
   ])
   .inputValidator(UploadFileSchema)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { env } = await import("cloudflare:workers");
     const { createDb, uploadedFiles } = await import("@repo/db");
     const db = createDb(env.DB);
-    const r2Key = `uploads/${Date.now()}-${data.filename}`;
+    // Random key: user filenames collide (same-millisecond uploads shared a
+    // key and overwrote each other) and don't belong in storage paths.
+    const r2Key = `uploads/${crypto.randomUUID()}`;
     const bytes = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
 
     await env.BUCKET.put(r2Key, bytes, {
       httpMetadata: { contentType: data.contentType },
     });
 
-    await db.insert(uploadedFiles).values({
-      filename: data.filename,
-      r2Key,
-      contentType: data.contentType,
-      size: bytes.length,
-    });
+    try {
+      await db.insert(uploadedFiles).values({
+        filename: data.filename,
+        r2Key,
+        contentType: data.contentType,
+        size: bytes.length,
+        userId: context.session.user.id,
+      });
+    } catch (err) {
+      // Don't leave an orphaned object if the metadata insert fails.
+      await env.BUCKET.delete(r2Key).catch(() => {});
+      throw err;
+    }
 
     return { success: true };
   });
 
 const deleteFile = createServerFn({ method: "POST" })
   .middleware([
+    authMiddleware,
     rateLimitMiddleware({ key: "delete-file", limit: 20, windowSecs: 60 }),
     tracingMiddleware,
   ])
   .inputValidator(FileIdSchema)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { env } = await import("cloudflare:workers");
     const { createDb, uploadedFiles } = await import("@repo/db");
     const { eq } = await import("drizzle-orm");
@@ -125,8 +151,16 @@ const deleteFile = createServerFn({ method: "POST" })
       throw new Error("File not found");
     }
 
-    await env.BUCKET.delete(file.r2Key);
+    const { user } = context.session;
+    const isAdmin = (user as { role?: string }).role === "admin";
+    if (!isAdmin && file.userId !== user.id) {
+      throw new Error("You can only delete files you uploaded");
+    }
+
+    // DB row first: a failure here leaves everything intact. R2 delete is
+    // best-effort — a dangling object costs pennies, a dangling row 404s.
     await db.delete(uploadedFiles).where(eq(uploadedFiles.id, data.id));
+    await env.BUCKET.delete(file.r2Key).catch(() => {});
 
     return { success: true };
   });
@@ -182,7 +216,7 @@ function GuestbookSection({
   initialEntries,
   initialTotal,
 }: {
-  initialEntries: { id: number; name: string; message: string; createdAt: string }[];
+  initialEntries: { id: number; name: string; message: string; createdAt: Date }[];
   initialTotal: number;
 }) {
   const [entries, setEntries] = useState(initialEntries);
@@ -193,10 +227,19 @@ function GuestbookSection({
   const [submitting, setSubmitting] = useState(false);
 
   const fetchPage = async (p: number) => {
-    const data = await getEntries({ data: { page: p } });
-    setEntries(data.entries);
-    setTotal(data.total);
-    setPage(p);
+    try {
+      const data = await getEntries({ data: { page: p } });
+      // Don't strand the user on an empty trailing page.
+      if (data.entries.length === 0 && p > 1) {
+        await fetchPage(p - 1);
+        return;
+      }
+      setEntries(data.entries);
+      setTotal(data.total);
+      setPage(p);
+    } catch {
+      toast.error("Failed to load entries");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -255,7 +298,9 @@ function GuestbookSection({
               <div key={entry.id} className="rounded-md border p-3">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{entry.name}</span>
-                  <span className="text-xs text-muted-foreground">{entry.createdAt}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDate(entry.createdAt)}
+                  </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">{entry.message}</p>
               </div>
@@ -284,7 +329,8 @@ function FileUploadSection({
     r2Key: string;
     contentType: string;
     size: number;
-    createdAt: string;
+    userId: string | null;
+    createdAt: Date;
   }[];
 }) {
   const [files, setFiles] = useState(initialFiles);
@@ -298,26 +344,46 @@ function FileUploadSection({
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
 
+    // Validate before encoding — a 100MB file shouldn't freeze the tab just
+    // to be rejected by the server.
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("File is too large (max 5MB)");
+      e.target.value = "";
+      return;
+    }
+    const contentType = ALLOWED_CONTENT_TYPES.find((t) => t === file.type);
+    if (!contentType) {
+      toast.error(`Unsupported file type: ${file.type || "unknown"}`);
+      e.target.value = "";
+      return;
+    }
+
+    setUploading(true);
     try {
       const buffer = await file.arrayBuffer();
-      const base64 = btoa(
-        new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ""),
-      );
+      const bytes = new Uint8Array(buffer);
+      // Chunked encoding: byte-by-byte string concatenation is O(n²) and
+      // freezes the main thread for multi-MB files.
+      const CHUNK = 0x8000;
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+      }
+      const base64 = btoa(binary);
 
       await uploadFile({
         data: {
           filename: file.name,
-          contentType: file.type || "application/octet-stream",
+          contentType,
           base64,
         },
       });
 
       toast.success(`Uploaded ${file.name}`);
       await refreshFiles();
-    } catch {
-      toast.error("Failed to upload file");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload file");
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -397,8 +463,8 @@ function DeleteFileButton({ id, onDeleted }: { id: number; onDeleted: () => void
       await deleteFile({ data: { id } });
       toast.success("File deleted");
       onDeleted();
-    } catch {
-      toast.error("Failed to delete file");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete file");
     } finally {
       setDeleting(false);
     }

@@ -1,0 +1,21 @@
+# CF TanStack Starter
+
+> Full-stack starter template running on Cloudflare Workers: TanStack Start
+> (React SSR + server functions), D1 (SQLite), R2 (object storage), KV
+> (feature flags + rate limiting), Drizzle ORM, better-auth, and shadcn/ui.
+
+This file follows https://llmstxt.org — a machine-readable site overview for
+LLM agents. Replace its contents with a description of YOUR site when you
+build on this template.
+
+## Pages
+
+- [Home](/): landing page describing the stack
+- [Demo](/demo): live D1 guestbook and R2 file upload demo
+- [Login](/login), [Register](/register): username/password auth (better-auth)
+
+## For contributors
+
+- Source layout, conventions, and commands: see AGENTS.md / CLAUDE.md in the repository root
+- Admin panel lives under /admin (session + admin role required)
+- API endpoints under /api/ are documented in the repository README

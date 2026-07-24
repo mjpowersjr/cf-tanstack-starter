@@ -30,10 +30,10 @@ async function main() {
   const adminHash = await hashPassword("password");
 
   statements.push(
-    `INSERT OR IGNORE INTO user (id, name, email, email_verified, username, display_username, role, banned, created_at, updated_at) VALUES ('${adminId}', 'Admin', 'admin@example.com', 0, 'admin', 'Admin', 'admin', 0, ${now}, ${now});`,
+    `INSERT OR IGNORE INTO user (id, name, email, emailVerified, username, displayUsername, role, banned, createdAt, updatedAt) VALUES ('${adminId}', 'Admin', 'admin@example.com', 0, 'admin', 'Admin', 'admin', 0, ${now}, ${now});`,
   );
   statements.push(
-    `INSERT OR IGNORE INTO account (id, user_id, account_id, provider_id, password, created_at, updated_at) VALUES ('${adminAccountId}', '${adminId}', '${adminId}', 'credential', '${esc(adminHash)}', ${now}, ${now});`,
+    `INSERT OR IGNORE INTO account (id, userId, accountId, providerId, password, createdAt, updatedAt) VALUES ('${adminAccountId}', '${adminId}', '${adminId}', 'credential', '${esc(adminHash)}', ${now}, ${now});`,
   );
 
   // --- Regular user ---
@@ -42,10 +42,10 @@ async function main() {
   const userHash = await hashPassword("password");
 
   statements.push(
-    `INSERT OR IGNORE INTO user (id, name, email, email_verified, username, display_username, role, banned, created_at, updated_at) VALUES ('${userId}', 'User', 'user@example.com', 0, 'user', 'User', 'user', 0, ${now}, ${now});`,
+    `INSERT OR IGNORE INTO user (id, name, email, emailVerified, username, displayUsername, role, banned, createdAt, updatedAt) VALUES ('${userId}', 'User', 'user@example.com', 0, 'user', 'User', 'user', 0, ${now}, ${now});`,
   );
   statements.push(
-    `INSERT OR IGNORE INTO account (id, user_id, account_id, provider_id, password, created_at, updated_at) VALUES ('${userAccountId}', '${userId}', '${userId}', 'credential', '${esc(userHash)}', ${now}, ${now});`,
+    `INSERT OR IGNORE INTO account (id, userId, accountId, providerId, password, createdAt, updatedAt) VALUES ('${userAccountId}', '${userId}', '${userId}', 'credential', '${esc(userHash)}', ${now}, ${now});`,
   );
 
   // --- Guestbook entries ---

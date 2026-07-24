@@ -29,6 +29,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { adminMiddleware } from "~/lib/admin-middleware";
+import { formatDate } from "~/lib/format";
 import { rateLimitMiddleware } from "~/lib/rate-limit-middleware";
 
 // --- Server Functions ---
@@ -137,7 +138,7 @@ interface Entry {
   id: number;
   name: string;
   message: string;
-  createdAt: string;
+  createdAt: Date;
 }
 
 // --- Components ---
@@ -151,10 +152,19 @@ function GuestbookPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const fetchPage = async (p: number, s?: "newest" | "oldest" | "name") => {
-    const data = await getEntries({ data: { page: p, sort: s ?? sort } });
-    setEntries(data.entries);
-    setTotal(data.total);
-    setPage(p);
+    try {
+      const data = await getEntries({ data: { page: p, sort: s ?? sort } });
+      // Don't strand the user on an empty trailing page after a delete.
+      if (data.entries.length === 0 && p > 1) {
+        await fetchPage(p - 1, s);
+        return;
+      }
+      setEntries(data.entries);
+      setTotal(data.total);
+      setPage(p);
+    } catch {
+      toast.error("Failed to load entries");
+    }
   };
 
   const handleSort = async (s: "newest" | "oldest" | "name") => {
@@ -261,7 +271,7 @@ function GuestbookPage() {
                         </TableCell>
                         <TableCell className="font-medium">{entry.name}</TableCell>
                         <TableCell className="max-w-md truncate">{entry.message}</TableCell>
-                        <TableCell className="text-sm">{entry.createdAt}</TableCell>
+                        <TableCell className="text-sm">{formatDate(entry.createdAt)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button
@@ -315,7 +325,7 @@ function EditRow({
       <TableCell>
         <Input value={message} onChange={(e) => setMessage(e.target.value)} className="h-8" />
       </TableCell>
-      <TableCell className="text-sm">{entry.createdAt}</TableCell>
+      <TableCell className="text-sm">{formatDate(entry.createdAt)}</TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-1">
           <Button size="sm" onClick={() => onSave(entry.id, name, message)}>

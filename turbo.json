@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["tsconfig.base.json", "biome.json", "pnpm-lock.yaml"],
   "tasks": {
     "dev": {
       "cache": false,
@@ -16,15 +17,11 @@
       "dependsOn": ["^typecheck", "routes:generate"]
     },
     "test": {
-      "dependsOn": ["^build"],
-      "cache": false
+      "outputs": []
     },
     "test:watch": {
       "cache": false,
       "persistent": true
-    },
-    "lint": {
-      "cache": false
     },
     "db:generate": {
       "cache": false

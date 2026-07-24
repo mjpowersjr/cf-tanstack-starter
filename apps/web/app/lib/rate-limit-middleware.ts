@@ -1,5 +1,5 @@
 import { createMiddleware } from "@tanstack/react-start";
-import { checkRateLimit } from "./rate-limit";
+import { checkRateLimit, rateLimitResponse } from "./rate-limit";
 
 /**
  * Creates a TanStack Start middleware that enforces per-IP rate limits
@@ -18,10 +18,9 @@ export function rateLimitMiddleware(opts: { key: string; limit: number; windowSe
     const { getRequestHeaders } = await import("@tanstack/react-start/server");
 
     const headers = getRequestHeaders();
-    const ip =
-      headers["cf-connecting-ip"] ||
-      (headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ||
-      "unknown";
+    // Trust only cf-connecting-ip (always set by Cloudflare in production);
+    // other forwarding headers are client-controlled.
+    const ip = headers.get("cf-connecting-ip") || "unknown";
 
     const result = await checkRateLimit(
       (env as Cloudflare.Env).RATE_LIMIT,
@@ -31,7 +30,9 @@ export function rateLimitMiddleware(opts: { key: string; limit: number; windowSe
     );
 
     if (!result.allowed) {
-      throw new Error("Too many requests");
+      // A thrown Response is returned as-is by TanStack Start — clients get a
+      // real 429 with Retry-After instead of an opaque 500.
+      throw rateLimitResponse(result.resetAt);
     }
 
     return next();
