@@ -7,40 +7,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-
-type Theme = "light" | "dark" | "system";
-
-function readStoredTheme(): Theme {
-  if (typeof window === "undefined") return "system";
-  const stored = localStorage.getItem("theme");
-  return stored === "light" || stored === "dark" ? stored : "system";
-}
-
-function applyTheme(theme: Theme) {
-  const isDark =
-    theme === "dark" ||
-    (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-  document.documentElement.classList.toggle("dark", isDark);
-}
+import { applyTheme, setTheme as persistTheme, readStoredTheme, type Theme } from "~/lib/theme";
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("system");
+  const [theme, setThemeState] = useState<Theme>("system");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setTheme(readStoredTheme());
+    setThemeState(readStoredTheme());
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!mounted) return;
-    if (theme === "system") {
-      localStorage.removeItem("theme");
-    } else {
-      localStorage.setItem("theme", theme);
-    }
-    applyTheme(theme);
-  }, [theme, mounted]);
+  const setTheme = (next: Theme) => {
+    setThemeState(next);
+    persistTheme(next);
+  };
 
   // While in "system" mode, react to OS theme changes.
   useEffect(() => {
