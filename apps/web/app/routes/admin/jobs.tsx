@@ -71,7 +71,7 @@ const PaginationSchema = v.object({
 
 const getJobRuns = createServerFn({ method: "GET" })
   .middleware([adminMiddleware, tracingMiddleware])
-  .inputValidator(PaginationSchema)
+  .validator(PaginationSchema)
   .handler(async ({ data }): Promise<{ runs: JobRun[]; total: number }> => {
     const { env } = await import("cloudflare:workers");
     const { createDb, jobRuns } = await import("@repo/db");
@@ -98,7 +98,7 @@ const triggerJob = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "trigger-job", limit: 10, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(TriggerJobSchema)
+  .validator(TriggerJobSchema)
   .handler(async ({ data, context }) => {
     const { env } = await import("cloudflare:workers");
     const { jobs } = await import("~/jobs/registry");

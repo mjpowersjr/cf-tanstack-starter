@@ -76,7 +76,7 @@ const setFeatureFlag = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "set-flag", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(FlagSchema)
+  .validator(FlagSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
     const { setFlag } = await import("~/lib/feature-flags");
@@ -94,7 +94,7 @@ const deleteFeatureFlag = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "delete-flag", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(DeleteFlagSchema)
+  .validator(DeleteFlagSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
     const { deleteFlag } = await import("~/lib/feature-flags");

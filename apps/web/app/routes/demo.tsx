@@ -44,7 +44,7 @@ const ENTRIES_PAGE_SIZE = 10;
 
 const getEntries = createServerFn({ method: "GET" })
   .middleware([tracingMiddleware])
-  .inputValidator(v.object({ page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1) }))
+  .validator(v.object({ page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1) }))
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
     const { createDb, guestbookEntries } = await import("@repo/db");
@@ -69,7 +69,7 @@ const addEntry = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "add-entry", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(AddEntrySchema)
+  .validator(AddEntrySchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
     const { createDb, guestbookEntries } = await import("@repo/db");
@@ -97,7 +97,7 @@ const uploadFile = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "upload-file", limit: 10, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(UploadFileSchema)
+  .validator(UploadFileSchema)
   .handler(async ({ data, context }) => {
     const { env } = await import("cloudflare:workers");
     const { createDb, uploadedFiles } = await import("@repo/db");
@@ -134,7 +134,7 @@ const deleteFile = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "delete-file", limit: 20, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(FileIdSchema)
+  .validator(FileIdSchema)
   .handler(async ({ data, context }) => {
     const { env } = await import("cloudflare:workers");
     const { createDb, uploadedFiles } = await import("@repo/db");

@@ -55,7 +55,7 @@ async function getAuthApi() {
 
 const listUsers = createServerFn({ method: "GET" })
   .middleware([adminMiddleware, tracingMiddleware])
-  .inputValidator(ListUsersSchema)
+  .validator(ListUsersSchema)
   .handler(async ({ data }) => {
     const { env } = await import("cloudflare:workers");
     const { createDb, user } = await import("@repo/db");
@@ -99,7 +99,7 @@ const createUser = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "admin-create-user", limit: 20, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(CreateUserSchema)
+  .validator(CreateUserSchema)
   .handler(async ({ data }) => {
     const { auth, headers } = await getAuthApi();
     await auth.api.createUser({
@@ -121,7 +121,7 @@ const updateUser = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "admin-update-user", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(UpdateUserSchema)
+  .validator(UpdateUserSchema)
   .handler(async ({ data }) => {
     const { auth, headers } = await getAuthApi();
     await auth.api.adminUpdateUser({
@@ -144,7 +144,7 @@ const setUserRole = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "admin-set-role", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(SetRoleSchema)
+  .validator(SetRoleSchema)
   .handler(async ({ data, context }) => {
     // Self-guard: don't let an admin strip their own admin role and lock the
     // team out. Enforced server-side so it can't be bypassed from the client.
@@ -162,7 +162,7 @@ const banUser = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "admin-ban-user", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(UserIdSchema)
+  .validator(UserIdSchema)
   .handler(async ({ data, context }) => {
     if (data.userId === context.session.user.id) {
       throw new Error("You can't ban yourself.");
@@ -178,7 +178,7 @@ const unbanUser = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "admin-unban-user", limit: 30, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(UserIdSchema)
+  .validator(UserIdSchema)
   .handler(async ({ data }) => {
     const { auth, headers } = await getAuthApi();
     await auth.api.unbanUser({ body: { userId: data.userId }, headers });
@@ -191,7 +191,7 @@ const deleteUser = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "admin-delete-user", limit: 20, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(UserIdSchema)
+  .validator(UserIdSchema)
   .handler(async ({ data, context }) => {
     if (data.userId === context.session.user.id) {
       throw new Error("You can't delete your own account here.");
@@ -207,7 +207,7 @@ const resetPassword = createServerFn({ method: "POST" })
     rateLimitMiddleware({ key: "admin-reset-password", limit: 20, windowSecs: 60 }),
     tracingMiddleware,
   ])
-  .inputValidator(ResetPasswordSchema)
+  .validator(ResetPasswordSchema)
   .handler(async ({ data }) => {
     const { auth, headers } = await getAuthApi();
     await auth.api.setUserPassword({
