@@ -87,3 +87,69 @@ export const UpdateEntrySchema = v.object({
 });
 
 export type UpdateEntryInput = v.InferOutput<typeof UpdateEntrySchema>;
+
+// --- Admin: user management ---
+
+/** Roles the admin UI can assign. Mirrors better-auth's admin plugin roles. */
+export const USER_ROLES = ["user", "admin"] as const;
+
+const userRole = v.picklist(USER_ROLES, "Role must be 'user' or 'admin'");
+const usernameField = v.pipe(
+  v.string(),
+  v.trim(),
+  v.minLength(3, "Username must be at least 3 characters"),
+  v.maxLength(50),
+  v.regex(/^[a-zA-Z0-9_-]+$/, "Username may only contain letters, numbers, dashes, underscores"),
+);
+const emailField = v.pipe(v.string(), v.trim(), v.email("Enter a valid email"), v.maxLength(255));
+const passwordField = v.pipe(
+  v.string(),
+  v.minLength(8, "Password must be at least 8 characters"),
+  v.maxLength(256),
+);
+const userIdField = v.pipe(v.string(), v.minLength(1, "User ID is required"));
+
+/** Paginated + searchable user listing input. */
+export const ListUsersSchema = v.object({
+  page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
+  search: v.optional(v.pipe(v.string(), v.trim(), v.maxLength(255)), ""),
+});
+
+export type ListUsersInput = v.InferOutput<typeof ListUsersSchema>;
+
+export const CreateUserSchema = v.object({
+  username: usernameField,
+  email: emailField,
+  password: passwordField,
+  role: v.optional(userRole, "user"),
+});
+
+export type CreateUserInput = v.InferOutput<typeof CreateUserSchema>;
+
+export const UpdateUserSchema = v.object({
+  userId: userIdField,
+  username: usernameField,
+  email: emailField,
+});
+
+export type UpdateUserInput = v.InferOutput<typeof UpdateUserSchema>;
+
+export const SetRoleSchema = v.object({
+  userId: userIdField,
+  role: userRole,
+});
+
+export type SetRoleInput = v.InferOutput<typeof SetRoleSchema>;
+
+export const ResetPasswordSchema = v.object({
+  userId: userIdField,
+  password: passwordField,
+});
+
+export type ResetPasswordInput = v.InferOutput<typeof ResetPasswordSchema>;
+
+export const UserIdSchema = v.object({
+  userId: userIdField,
+});
+
+export type UserIdInput = v.InferOutput<typeof UserIdSchema>;

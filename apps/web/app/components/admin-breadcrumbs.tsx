@@ -15,6 +15,7 @@ const labels: Record<string, string> = {
   sessions: "Sessions",
   status: "Status",
   guestbook: "Guestbook",
+  users: "Users",
 };
 
 export function AdminBreadcrumbs() {

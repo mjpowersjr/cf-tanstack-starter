@@ -81,6 +81,7 @@ function RegisterPage() {
       return;
     }
 
+    await router.invalidate();
     router.navigate({ to: "/login" });
   };
 

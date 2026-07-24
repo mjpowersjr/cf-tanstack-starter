@@ -5,6 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import * as v from "valibot";
+import { useConfirm } from "~/components/confirm-dialog";
 import { LoadingSkeleton } from "~/components/loading";
 import { Pagination } from "~/components/pagination";
 import { Badge } from "~/components/ui/badge";
@@ -100,6 +101,7 @@ function FilesPage() {
   const [files, setFiles] = useState(initialData.files);
   const [total, setTotal] = useState(initialData.total);
   const [page, setPage] = useState(1);
+  const { confirm, dialog } = useConfirm();
 
   const fetchPage = async (p: number) => {
     try {
@@ -119,7 +121,13 @@ function FilesPage() {
   };
 
   const handleDelete = async (id: number, filename: string) => {
-    if (!confirm(`Delete "${filename}"?`)) return;
+    const ok = await confirm({
+      title: `Delete "${filename}"?`,
+      description: "The file is removed from R2 storage. This cannot be undone.",
+      confirmLabel: "Delete file",
+      variant: "destructive",
+    });
+    if (!ok) return;
     try {
       await deleteFileAdmin({ data: { id } });
       toast.success(`Deleted "${filename}"`);
@@ -205,6 +213,7 @@ function FilesPage() {
           )}
         </CardContent>
       </Card>
+      {dialog}
     </div>
   );
 }
